@@ -1,0 +1,58 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "livelora"
+version = "0.1.0"
+description = "Live topological LoRA — inference-time adapter refinement via differentiable persistent homology"
+readme = "README.md"
+license = "Apache-2.0"
+requires-python = ">=3.10"
+authors = [
+    { name = "LiveLoRA Contributors" },
+]
+
+dependencies = [
+    "torch>=2.2.0",
+    "transformers>=4.40.0",
+    "peft>=0.10.0",
+    "gudhi>=3.9.0",
+    "numpy>=1.24.0",
+    "einops>=0.7.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov",
+    "ruff>=0.3.0",
+    "pre-commit",
+]
+experiment = [
+    "wandb",
+    "matplotlib",
+    "seaborn",
+    "jupyter",
+    "tqdm",
+]
+full = [
+    "livelora[dev,experiment]",
+    "giotto-tda>=0.6.0",
+    "torchopt>=0.7.0",
+]
+
+[tool.setuptools.packages.find]
+include = ["livelora*"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short"
