@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 LiveLoRA is a research project for **live topological LoRA adaptation** — updating LoRA adapter weights during inference using differentiable persistent homology (PH) signals as a topological fidelity loss. No existing work combines topological signals with inference-time LoRA adaptation.
 
-**Status**: Phase 0 validated (TTT loop works, loss decreases, gradients flow). Phase 2 infrastructure (LiveLoRA-Delta) built and tested.
+**Status**: Phase 0 validated. Phase 1 experiments in progress (three-way comparison built, correlation study run on GPT-2). Phase 2 infrastructure (LiveLoRA-Delta) built with conditional PH escalation.
 
 ## Git Conventions
 
@@ -72,8 +72,18 @@ Two operating modes, built from shared components:
 - `gudhi>=3.9` — persistent homology computation (the topological engine)
 - `einops` — tensor reshaping utilities
 
+## Experiments
+
+- **`experiments/toy_ttt.py`** — Proof of concept TTT on GPT-2/Qwen3.5-0.8B
+- **`experiments/benchmark_ph.py`** — PH computation speed benchmarks
+- **`experiments/correlation_study.py`** — Does topology predict output quality?
+- **`experiments/three_way_comparison.py`** — Core Phase 1: no-adapt vs entropy-TTT vs PH-TTT
+
 ## Validated Findings
 
 - TTT loop works end-to-end: loss decreases across steps, LoRA weights change measurably
 - Gradients flow through PH → distance matrix → activations → LoRA in 100% of tested cases
 - PH computation benchmarked: 64 points at H0+H1 ~25-65ms, scales O(n^3) with point count
+- **Correlation study (GPT-2)**: no significant topology-quality correlation (Spearman rho ≈ -0.05), but GPT-2 is too weak for reasoning — needs Qwen3.5-0.8B
+- **PHTracker**: directional degradation scoring works — only penalizes topology DECREASE, ignores natural expansion from growing sequences
+- **Conditional PH escalation**: STABLE=skip, DRIFTING=1 attempt, COLLAPSING=2 attempts
