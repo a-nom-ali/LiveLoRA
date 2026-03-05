@@ -72,19 +72,42 @@ This roadmap is organized into phases, each with clear goals and deliverables. E
 
 ---
 
-## Phase 2 — LiveLoRA-Delta: Chunked Generation & Topology Gating
+## Phase 2 — LiveLoRA-Delta: Chunked Generation with MDL Ratio Gate
 
-**Question**: *Can we adapt LoRA during generation at chunk boundaries, guided by topology gates?*
+**Question**: *Can we adapt LoRA during generation using topology-faithful updates that repair structure without learning the conversation?*
 
-**Goal**: Instead of adapting once per prompt, adapt at selected points during generation when topology destabilizes. This is the "live" in LiveLoRA.
+**Goal**: Instead of adapting once per prompt, adapt at selected points during generation when topology destabilizes. Critically, use a **structural vs. semantic decomposition** to ensure updates are topology repair, not micro fine-tuning on the current exchange.
+
+### Core formulation: the MDL ratio gate
+
+Each candidate LoRA update is decomposed into:
+
+- **Structural loss** `L_struct = D_topo(theta) + lambda * ||theta - theta_0||^2` — topological distance to target + parameter drift
+- **Semantic loss** `L_sem = KL(p_theta_0 || p_theta)` — KL divergence of output distribution from pre-update state
+
+The **stability ratio** measures efficiency of the update:
+```
+rho = delta_L_struct / (delta_L_sem + beta)
+```
+
+**Accept update only if ALL three hold:**
+1. **KL trust region**: `L_sem <= epsilon` (semantic pinning — prevents conversation learning)
+2. **Payoff gate**: `rho >= tau` (high structural gain per unit semantic drift)
+3. **Must improve**: `delta_L_struct > 0` (topology actually got better)
+
+### Topology target (pi-star)
+
+- **Phase 0/1 (self-consistency)**: `pi* = pi(H_theta_0)` — topology at checkpoint state is the "healthy" baseline. Updates repair drift back toward this.
+- **Later (population prior)**: `pi*` learned offline from good reasoning traces.
 
 ### Tasks
 
 - [ ] Implement `core/gen_controller.py` — chunked generation controller:
   - Configurable chunk size (default: 32 tokens)
-  - Update gate: only adapt when PH loss > threshold or deviates sharply from rolling baseline
-  - Update cooldown: don't allow updates on consecutive chunks unless loss is severe
-  - Tiny LR + single step per update event
+  - Candidate update step: compute gradient, apply, evaluate, accept/reject
+  - KL trust region computation (avg KL per chunk tokens)
+  - Rho ratio gate with configurable `epsilon`, `tau`, `beta`
+  - Update cooldown: skip consecutive chunks unless loss is severe
 - [ ] Implement `topology/ph_tracker.py` — rolling topology baseline:
   - Store persistence summary stats from earlier chunks
   - Compare current chunk's diagram to baseline (Wasserstein distance)
@@ -92,16 +115,25 @@ This roadmap is organized into phases, each with clear goals and deliverables. E
 - [ ] **Three-way comparison** on reasoning tasks:
   1. No adaptation
   2. Adapt once per prompt (Phase 1 approach)
-  3. Adapt per chunk with gate (LiveLoRA-Delta)
-- [ ] Measure: accuracy, average PH update count per generation, latency overhead
+  3. Adapt per chunk with MDL ratio gate (LiveLoRA-Delta)
+- [ ] Measure: accuracy, acceptance rate, average PH update count per generation, latency overhead
 - [ ] Integrate ScaleNet-modulated optimizer (per-layer LR = base_lr * scale_factor)
 - [ ] Explore surprise-proportional variants (Titans-style: scale proportional to gradient magnitude)
 
-### Stability constraints (all four together)
+### Stability constraints (all work together)
 1. Tiny LR + single gradient step per update event
 2. Elastic drift anchor (L2 toward initial adapter)
 3. Small LoRA rank (4-8)
 4. Update cooldown (skip consecutive chunks)
+5. **KL trust region** — pin output distribution close to pre-update state
+6. **Rho payoff gate** — reject updates with low structural return on semantic investment
+
+### Suggested defaults
+- `epsilon` (KL trust region): 1e-4 to 1e-3 avg KL per chunk
+- `tau` (payoff threshold): ~50 (expect low acceptance rate initially — that's correct)
+- `beta` (division safety): 1e-8
+- LR: 1e-4, grad_clip: 1.0
+- LoRA: Q/K/V (+ optionally O) on 2-4 mid layers
 
 ### Dependencies
 - Requires solid Phase 1 results showing per-prompt TTT actually helps
@@ -171,6 +203,23 @@ This turns topology into a semantic constraint, not just a structural one.
 
 LLM + LoRA substrate + topology feedback = a model that **reshapes its internal geometry per query**. This is closer to adaptive representation geometry — how biological neural systems behave. The model maintains a topological "self-model" of its representations and actively optimizes it.
 
+### Hybrid Proxy Escalation
+
+Use cheap attention-graph or gradient-norm proxies for most chunks; only compute full PH when proxies trigger an anomaly. This could cut PH computation by 80-90% while preserving the topological signal where it matters.
+
+### Fisher/Laplace Drift Penalty
+
+Replace the simple `||theta - theta_0||^2` drift regularizer with a diagonal Fisher or Laplace approximation penalty — stronger stability under repeated updates, better calibrated to which parameters matter most.
+
+### General Relativity of Change (GRC) Framework
+
+The MDL ratio gate naturally decomposes into a GRC-style formulation:
+- **Structural change field**: `delta_L_struct` (topology distortion reduction + parameter cost)
+- **Semantic displacement**: `delta_L_sem` (KL drift in output distribution)
+- **Change efficiency**: `rho` = structural gain / semantic cost — "allow change only when it increases structural coherence without warping the expressed trajectory"
+
+This may generalize beyond LiveLoRA to a principled framework for any inference-time adaptation system.
+
 ### Advanced PH Techniques
 
 - [ ] **Persistence landscapes** for smoother, more stable gradients than raw diagrams
@@ -187,13 +236,15 @@ LLM + LoRA substrate + topology feedback = a model that **reshapes its internal 
 
 If this works, the paper positioning is:
 
-> **LiveLoRA: Topological Test-Time Adaptation for Large Language Models**
+> **LiveLoRA: Topology-Faithful Test-Time Adaptation for Large Language Models**
 >
-> LoRA = parameter substrate. TTT = adaptation protocol. PH = structural signal.
+> LoRA = parameter substrate. TTT = adaptation protocol. PH = structural signal. MDL ratio gate = change control.
 >
-> We introduce a new class of inference-time losses based on topological invariants of representation manifolds.
+> We introduce a new class of inference-time losses based on topological invariants of representation manifolds, with a principled accept/reject mechanism that decomposes adapter updates into structural improvement vs. semantic displacement.
 
-The key claim: most representation learning optimizes distance/similarity/entropy/contrast. LiveLoRA optimizes **topological invariants** — a qualitatively different signal.
+The key claims:
+1. Most representation learning optimizes distance/similarity/entropy/contrast. LiveLoRA optimizes **topological invariants** — a qualitatively different signal
+2. The MDL ratio gate ensures updates are **topology repair**, not conversation adaptation — a controlled structural repair mechanism
 
 ---
 

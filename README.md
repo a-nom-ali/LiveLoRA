@@ -27,9 +27,10 @@ LiveLoRA-Delta adapts *during* generation at chunk boundaries, using topology as
 ### Core components
 
 1. **Topological refinement**: Compute persistent homology on activation point clouds, define a topological fidelity loss, and update LoRA weights with a few gradient steps
-2. **Topology gating**: Only adapt when needed — stable topology skips updates, destabilizing topology triggers small corrections, collapsing topology triggers stronger intervention
-3. **Stability**: Adapt-and-reset pattern (checkpoint/restore LoRA per query) with L2 drift regularization, gradient clipping, and update cooldowns
-4. **Warm-start** (future): A hypernetwork produces an initial LoRA adapter from the input in one forward pass
+2. **Structural vs. semantic separation**: Updates are decomposed into *structural improvement* (topology repair + minimal parameter drift) and *semantic displacement* (KL divergence of output distribution). Only updates with high structural gain per unit of semantic movement are accepted
+3. **MDL ratio gate**: Candidate LoRA updates are evaluated and accepted only if they pass three criteria: KL trust region (semantic pinning), payoff ratio (structural gain >> semantic drift), and net improvement. This prevents the adapter from "learning the conversation" and keeps updates as geometry repair
+4. **Stability**: Adapt-and-reset, L2 drift regularization, gradient clipping, update cooldowns, and KL trust region work together
+5. **Warm-start** (future): A hypernetwork produces an initial LoRA adapter from the input in one forward pass
 
 ### What is persistent homology doing here?
 
@@ -111,6 +112,8 @@ pytest tests/
 | **Adapt-and-reset** | Checkpoint LoRA before each input, refine, generate, then restore — each query gets fresh adaptation |
 | **ScaleNet** | A tiny network that predicts per-layer learning rates based on the current topological signal (surprise-proportional) |
 | **Topology gating** | Only update LoRA when PH loss exceeds threshold or deviates from rolling baseline — skip updates when topology is stable |
+| **KL trust region** | Pin output distribution close to pre-update state — forces updates to be structural repair, not conversation learning |
+| **MDL ratio gate (rho)** | Accept/reject updates based on ratio of structural improvement to semantic displacement — high rho = efficient repair |
 
 ## Research Foundations
 
@@ -122,7 +125,7 @@ This project synthesizes ideas from:
 - **Clough et al.** (IEEE TPAMI 2020) — Differentiable PH losses for neural networks
 - **Text-to-LoRA / Doc-to-LoRA** (Sakana AI) — Hypernetwork-based adapter generation (inspiration for warm-start)
 
-See [`LiveLoRA - Brief.md`](LiveLoRA%20-%20Brief.md) for the full research analysis and [`ChatGPT - Feedback.md`](ChatGPT%20-%20Feedback.md) for detailed technical feedback that shaped the roadmap.
+See [`LiveLoRA - Brief.md`](LiveLoRA%20-%20Brief.md) for the full research analysis, [`ChatGPT - Feedback.md`](ChatGPT%20-%20Feedback.md) for technical feedback, and [`ChatGPT - Additional Feedback.md`](ChatGPT%20-%20Additional%20Feedback.md) for the MDL ratio gate and KL trust region formalization.
 
 ## Current Status
 
