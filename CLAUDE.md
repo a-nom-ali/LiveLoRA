@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 LiveLoRA is a research project for **live topological LoRA adaptation** — updating LoRA adapter weights during inference using differentiable persistent homology (PH) signals as a topological fidelity loss. No existing work combines topological signals with inference-time LoRA adaptation.
 
-**Status**: Phase 0 — core loop implemented, awaiting validation experiments.
+**Status**: Phase 0 validated (TTT loop works, loss decreases, gradients flow). Phase 2 infrastructure (LiveLoRA-Delta) built and tested.
 
 ## Git Conventions
 
@@ -17,15 +17,18 @@ LiveLoRA is a research project for **live topological LoRA adaptation** — upda
 ## Commands
 
 ```bash
-# Install (editable)
-pip install -e ".[dev]"
+# Install (editable) — use py -3 on this Windows machine
+py -3 -m pip install -e ".[dev]"
 
-# Run tests
-pytest tests/
+# Run tests (40 tests, ~6s)
+py -3 -m pytest tests/ -v
 
 # Run toy experiment (default: Qwen3.5-0.8B, or gpt2 as fallback)
-python experiments/toy_ttt.py
-python experiments/toy_ttt.py --model gpt2 --steps 5  # smaller download
+py -3 experiments/toy_ttt.py
+py -3 experiments/toy_ttt.py --model gpt2 --steps 5
+
+# Run PH benchmark
+py -3 experiments/benchmark_ph.py
 
 # Lint
 ruff check livelora/ tests/
@@ -33,21 +36,35 @@ ruff check livelora/ tests/
 
 ## Architecture
 
-The system has three layers, built bottom-up:
+Two operating modes, built from shared components:
 
-1. **`livelora/topology/ph_loss.py`** — Differentiable PH loss functions using GUDHI. Computes persistent homology on activation distance matrices. Three loss modes: persistence maximization, Betti number targeting, diagram divergence. Gradients flow through the distance matrix back to activations.
+### Per-prompt adaptation (LiveLoRA)
+`livelora/core/ttt_loop.py` — N gradient steps on LoRA before generation.
 
-2. **`livelora/core/lora_adapter.py`** — PEFT wrapper (`LiveLoraModel`) with checkpoint/restore for adapt-and-reset pattern, selective gradient control (only LoRA params trainable), and L2 drift regularization from checkpoint.
+### Chunked generation (LiveLoRA-Delta)
+`livelora/core/gen_controller.py` — Generate in 32-token chunks, evaluate topology at each boundary, accept/reject LoRA updates via MDL ratio gate.
 
-3. **`livelora/core/ttt_loop.py`** — The test-time training engine (`TTTLoop`). Orchestrates: forward pass → extract activations → PH loss → backprop → LoRA update. Configurable steps, layers, subsample size.
+### Core modules
 
-4. **`livelora/core/scalenet.py`** — Per-layer learning rate modulation (not yet integrated into TTT loop). Predicts LR scale factors from topological signal features.
+1. **`livelora/topology/ph_loss.py`** — Differentiable PH losses using GUDHI. Three modes: persistence maximization, Betti number targeting, diagram divergence. GUDHI wasserstein is optional (requires POT).
+
+2. **`livelora/topology/ph_tracker.py`** — Rolling topology baseline tracker. Computes TopologySummary (Betti numbers, persistence stats) and classifies state as STABLE/DRIFTING/COLLAPSING.
+
+3. **`livelora/core/lora_adapter.py`** — PEFT wrapper with checkpoint/restore, `get_lora_target_modules()` for auto target detection across architectures.
+
+4. **`livelora/core/gen_controller.py`** — LiveLoRA-Delta engine with MDL ratio gate: `rho = delta_struct / (delta_sem + beta)`. Accept iff KL trust region + payoff gate + net improvement. Auto-rollback on reject.
+
+5. **`livelora/core/scalenet.py`** — Per-layer LR modulation (not yet wired into gen_controller).
+
+6. **`livelora/data/chatgpt_loader.py`** — Parses OpenAI ChatGPT export (conversations.json / zip) into (user, assistant) turn pairs.
 
 ### Key design decisions
-- GUDHI is used for PH (numpy-based), with careful handling to maintain differentiability through the distance matrix
-- PH is computed on subsampled activation point clouds (default 64-256 points) for tractability
-- LoRA uses HuggingFace PEFT — `get_lora_target_modules()` auto-detects target layers per architecture (q_proj/v_proj for Qwen/Llama/Gemma, c_attn for GPT-2)
-- Adapt-and-reset is the default: checkpoint LoRA before each query, restore after generation
+- GUDHI is used for PH (numpy-based), with differentiability through the distance matrix
+- **64 points is the sweet spot** for PH (~25-65ms). 128 is borderline (~300ms). 256+ is intractable
+- **H0-only is 10x faster than H0+H1** — start with H0 for iteration speed
+- Hidden dim barely affects PH time — PCA before PH won't help speed (Rips complex dominates)
+- LoRA uses HuggingFace PEFT — `get_lora_target_modules()` auto-detects per architecture
+- Adapt-and-reset is default; gen_controller adds KL trust region to prevent semantic drift
 
 ## Key Dependencies
 
@@ -55,8 +72,8 @@ The system has three layers, built bottom-up:
 - `gudhi>=3.9` — persistent homology computation (the topological engine)
 - `einops` — tensor reshaping utilities
 
-## Known Limitations / Open Questions
+## Validated Findings
 
-- GUDHI detaches to numpy for PH computation — gradients flow through the distance matrix indexing, but this may cause sparse/noisy gradients
-- PH computation scales poorly beyond ~256 points — subsample aggressively
-- It's unproven whether topological loss actually improves LLM outputs — Phase 1 experiments will answer this
+- TTT loop works end-to-end: loss decreases across steps, LoRA weights change measurably
+- Gradients flow through PH → distance matrix → activations → LoRA in 100% of tested cases
+- PH computation benchmarked: 64 points at H0+H1 ~25-65ms, scales O(n^3) with point count
