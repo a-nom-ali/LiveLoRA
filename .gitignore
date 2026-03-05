@@ -36,6 +36,12 @@ checkpoints/
 .DS_Store
 Thumbs.db
 
+# User data (ChatGPT exports, personal conversations — never commit)
+data/*.json
+data/*.zip
+data/**/*.json
+!data/.gitkeep
+
 # Environment
 .env
 .env.local
