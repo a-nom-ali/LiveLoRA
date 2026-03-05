@@ -9,6 +9,7 @@ gudhi = pytest.importorskip("gudhi")
 
 from livelora.core.gen_controller import ChunkMetrics, DeltaConfig, GenerationController
 from livelora.core.lora_adapter import LiveLoraConfig, LiveLoraModel, get_lora_target_modules
+from livelora.topology.ph_tracker import TopologyState
 
 
 @pytest.fixture
@@ -59,7 +60,7 @@ class TestGenerationController:
             _, baseline_points = controller._get_activations(input_ids)
             controller.tracker.set_baseline(baseline_points)
 
-        metrics = controller._try_update(input_ids, None, chunk_idx=0)
+        metrics = controller._try_update(input_ids, None, chunk_idx=0, topo_state=TopologyState.DRIFTING)
 
         assert isinstance(metrics, ChunkMetrics)
         assert isinstance(metrics.accepted, bool)

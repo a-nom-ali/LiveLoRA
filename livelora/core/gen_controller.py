@@ -19,7 +19,7 @@ import torch.nn.functional as F
 
 from livelora.core.lora_adapter import LiveLoraModel
 from livelora.topology.ph_loss import DifferentiablePHLoss, _activations_to_distance_matrix
-from livelora.topology.ph_tracker import PHTracker, TopologyState
+from livelora.topology.ph_tracker import PHTracker, TopologyState, _deterministic_subsample
 
 
 @dataclass
@@ -41,6 +41,7 @@ class DeltaConfig:
     epsilon_kl: float = 1e-3  # KL trust region bound
     tau_rho: float = 50.0  # Minimum rho for acceptance
     beta: float = 1e-8  # Division safety constant
+    kl_probe_len: int = 8  # Number of positions for KL trust region
 
     # Stability
     cooldown_chunks: int = 1  # Min chunks between updates
@@ -54,20 +55,29 @@ class DeltaConfig:
 
 @dataclass
 class ChunkMetrics:
-    """Metrics from a single chunk evaluation."""
+    """Metrics from a single chunk evaluation.
+
+    Stored for EVERY chunk, even when no update is attempted,
+    so that chunk_idx is always the real chunk number.
+    """
 
     chunk_idx: int
-    topo_loss_before: float
-    topo_loss_after: float
-    drift_before: float
-    drift_after: float
-    struct_loss_before: float
-    struct_loss_after: float
-    kl_divergence: float
-    delta_struct: float
-    rho: float
-    accepted: bool
     topology_state: str
+    attempts: int = 0  # How many update attempts were made
+    reason: str = ""  # "stable_skip", "cooldown", "max_updates", "rejected_kl", "rejected_rho", "accepted"
+    topo_loss_before: float = 0.0
+    topo_loss_after: float = 0.0
+    drift_before: float = 0.0
+    drift_after: float = 0.0
+    struct_loss_before: float = 0.0
+    struct_loss_after: float = 0.0
+    kl_divergence: float = 0.0
+    delta_struct: float = 0.0
+    rho: float = 0.0
+    accepted: bool = False
+    eff_rank: float = 0.0
+    cos_conc: float = 0.0
+    divergence: float = 0.0
 
 
 class GenerationController:
@@ -88,17 +98,51 @@ class GenerationController:
         self.ph_loss = DifferentiablePHLoss(
             max_dimension=self.config.max_dimension,
             max_points=self.config.max_points,
-            target_betti={0: 1, 1: 0},
         )
         self.tracker = PHTracker(
             max_points=self.config.max_points,
             max_dimension=self.config.max_dimension,
+        )
+        # Persistent optimizer (avoids re-creation per candidate step)
+        self._optimizer = torch.optim.SGD(
+            self.model.lora_parameters(), lr=self.config.lr,
         )
 
     def _resolve_layer_indices(self) -> list[int]:
         """Resolve negative layer indices."""
         n_layers = self.model.model.config.num_hidden_layers + 1
         return [n_layers + idx if idx < 0 else idx for idx in self.config.target_layers]
+
+    def _get_points(
+        self,
+        input_ids: torch.Tensor,
+        attention_mask: torch.Tensor | None = None,
+    ) -> torch.Tensor:
+        """Get activation point cloud from target layers (no logits).
+
+        Uses deterministic subsampling for stable topology comparisons.
+        """
+        layer_indices = self._resolve_layer_indices()
+        activations = self.model.get_layer_activations(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            layer_indices=layer_indices,
+        )
+        all_points = []
+        for idx in sorted(activations.keys()):
+            all_points.append(activations[idx][0])  # (seq_len, hidden_dim)
+        points = torch.cat(all_points, dim=0)
+
+        return _deterministic_subsample(points, self.config.max_points)
+
+    def _get_logits(
+        self,
+        input_ids: torch.Tensor,
+        attention_mask: torch.Tensor | None = None,
+    ) -> torch.Tensor:
+        """Forward pass returning logits only (no hidden_states overhead)."""
+        outputs = self.model(input_ids=input_ids, attention_mask=attention_mask)
+        return outputs.logits
 
     def _get_activations(
         self,
@@ -107,30 +151,35 @@ class GenerationController:
     ) -> tuple[torch.Tensor, torch.Tensor]:
         """Forward pass returning (logits, activation_points).
 
-        activation_points: (n_tokens, hidden_dim) from target layers.
+        Convenience method when both are needed.
         """
-        layer_indices = self._resolve_layer_indices()
-        activations = self.model.get_layer_activations(
-            input_ids=input_ids,
-            attention_mask=attention_mask,
-            layer_indices=layer_indices,
-        )
-        # Concatenate activations from target layers, first batch element
-        all_points = []
-        for idx in sorted(activations.keys()):
-            all_points.append(activations[idx][0])  # (seq_len, hidden_dim)
-        points = torch.cat(all_points, dim=0)
+        points = self._get_points(input_ids, attention_mask)
+        logits = self._get_logits(input_ids, attention_mask)
+        return logits, points
 
-        # Subsample
-        if points.shape[0] > self.config.max_points:
-            indices = torch.randperm(points.shape[0], device=points.device)[
-                : self.config.max_points
-            ]
-            points = points[indices]
+    @staticmethod
+    def _kl_trust_region(
+        logits_before: torch.Tensor,
+        logits_after: torch.Tensor,
+        probe_len: int = 8,
+        eps: float = 1e-12,
+    ) -> float:
+        """KL divergence averaged over last probe_len token positions.
 
-        # Get logits from a regular forward pass
-        outputs = self.model(input_ids=input_ids, attention_mask=attention_mask)
-        return outputs.logits, points
+        Constrains semantic drift across the chunk, not just the last token.
+        """
+        seq_len = logits_before.shape[1]
+        k = min(probe_len, seq_len)
+        probe_idx = torch.arange(seq_len - k, seq_len, device=logits_before.device)
+
+        lb = logits_before[:, probe_idx, :]
+        la = logits_after[:, probe_idx, :]
+
+        p = F.softmax(lb, dim=-1).clamp_min(eps)
+        logq = F.log_softmax(la, dim=-1)
+
+        kl = (p * (p.log() - logq)).sum(dim=-1)  # (batch, k)
+        return float(kl.mean().item())
 
     def _compute_struct_loss(
         self,
@@ -150,6 +199,7 @@ class GenerationController:
         input_ids: torch.Tensor,
         attention_mask: torch.Tensor | None,
         chunk_idx: int,
+        topo_state: TopologyState,
     ) -> ChunkMetrics:
         """Attempt one candidate LoRA update with MDL ratio gate.
 
@@ -161,72 +211,75 @@ class GenerationController:
         """
         cfg = self.config
 
-        # (0) Baseline forward (no gradients for this measurement)
+        # (0) Baseline: get logits (for KL) and points (for struct loss) separately
         with torch.no_grad():
-            logits_before, points_before = self._get_activations(input_ids, attention_mask)
-            # Detach logits for KL reference
-            p_before = F.softmax(logits_before[:, -1, :], dim=-1).detach()
+            logits_before = self._get_logits(input_ids, attention_mask).detach()
+            points_before = self._get_points(input_ids, attention_mask).detach()
 
-        # Compute baseline structural loss (needs grad for topo)
-        struct_before, topo_before = self._compute_struct_loss(points_before.detach())
+        struct_before, topo_before = self._compute_struct_loss(points_before)
         drift_before = self.model.lora_l2_from_checkpoint()
 
         # (1) Candidate update: one gradient step
         self.model.train()
-        # Save candidate state for potential rollback
         candidate_checkpoint = {
             name: param.data.clone()
             for name, param in self.model.model.named_parameters()
             if "lora_" in name
         }
 
-        # Forward with gradients
-        _, points_grad = self._get_activations(input_ids, attention_mask)
+        points_grad = self._get_points(input_ids, attention_mask)
         struct_loss, _ = self._compute_struct_loss(points_grad)
 
-        # Gradient step
-        optimizer = torch.optim.SGD(self.model.lora_parameters(), lr=cfg.lr)
-        optimizer.zero_grad()
+        self._optimizer.zero_grad()
         struct_loss.backward()
         torch.nn.utils.clip_grad_norm_(self.model.lora_parameters(), cfg.grad_clip)
-        optimizer.step()
+        self._optimizer.step()
 
         # (2) Evaluate candidate
         self.model.eval()
         with torch.no_grad():
-            logits_after, points_after = self._get_activations(input_ids, attention_mask)
-            p_after = F.softmax(logits_after[:, -1, :], dim=-1)
+            logits_after = self._get_logits(input_ids, attention_mask)
+            points_after = self._get_points(input_ids, attention_mask)
 
             struct_after, topo_after = self._compute_struct_loss(points_after)
             drift_after = self.model.lora_l2_from_checkpoint()
 
-            # KL divergence (semantic displacement)
-            # Clamp for numerical stability
-            kl = F.kl_div(
-                torch.log(p_after.clamp(min=1e-10)),
-                p_before,
-                reduction="batchmean",
-                log_target=False,
-            ).item()
+            # Multi-position KL (not just last token)
+            kl = self._kl_trust_region(
+                logits_before, logits_after, probe_len=cfg.kl_probe_len,
+            )
 
             d_struct = float(struct_before.item()) - float(struct_after.item())
             d_sem = max(kl, 0.0)
             rho = d_struct / (d_sem + cfg.beta)
 
-        # (3) Accept / reject
-        accept = (kl <= cfg.epsilon_kl) and (rho >= cfg.tau_rho) and (d_struct > 0)
+        # (3) Accept / reject with reason tracking
+        if kl > cfg.epsilon_kl:
+            accept = False
+            reason = "rejected_kl"
+        elif rho < cfg.tau_rho:
+            accept = False
+            reason = "rejected_rho"
+        elif d_struct <= 0:
+            accept = False
+            reason = "rejected_no_improvement"
+        else:
+            accept = True
+            reason = "accepted"
 
         if not accept:
-            # Rollback
             for name, param in self.model.model.named_parameters():
                 if "lora_" in name and name in candidate_checkpoint:
                     param.data.copy_(candidate_checkpoint[name])
 
-        # Use last assessed state from the generate loop
-        state = self.tracker.assess()
+        # Get proxy values from latest tracker observation
+        latest = self.tracker._history[-1] if self.tracker._history else None
 
         return ChunkMetrics(
             chunk_idx=chunk_idx,
+            topology_state=topo_state.value,
+            attempts=1,
+            reason=reason,
             topo_loss_before=float(topo_before.item()),
             topo_loss_after=float(topo_after.item()),
             drift_before=float(drift_before.item()) if isinstance(drift_before, torch.Tensor) else float(drift_before),
@@ -237,7 +290,9 @@ class GenerationController:
             delta_struct=d_struct,
             rho=rho,
             accepted=accept,
-            topology_state=state.value,
+            eff_rank=latest.eff_rank if latest else 0.0,
+            cos_conc=latest.cos_conc if latest else 0.0,
+            divergence=self.tracker.divergence_from_baseline(),
         )
 
     def generate(
@@ -255,6 +310,7 @@ class GenerationController:
 
         Returns:
             (generated_ids, list of ChunkMetrics per chunk).
+            Metrics list has exactly one entry per chunk (aligned by chunk_idx).
         """
         cfg = self.config
 
@@ -262,10 +318,10 @@ class GenerationController:
         self.model.checkpoint()
         self.tracker.reset()
 
-        # Set topology baseline from prompt activations
+        # Set topology baseline from prompt activations (points only — no logits needed)
         self.model.eval()
         with torch.no_grad():
-            _, baseline_points = self._get_activations(input_ids, attention_mask)
+            baseline_points = self._get_points(input_ids, attention_mask)
             self.tracker.set_baseline(baseline_points)
 
         all_metrics: list[ChunkMetrics] = []
@@ -274,6 +330,7 @@ class GenerationController:
         chunks_since_update = cfg.cooldown_chunks  # Allow first update
         total_updates = 0
         total_generated = 0
+        chunk_idx = 0
 
         while total_generated < cfg.max_new_tokens:
             tokens_to_gen = min(cfg.chunk_size, cfg.max_new_tokens - total_generated)
@@ -302,46 +359,60 @@ class GenerationController:
                     dim=1,
                 )
             total_generated += new_tokens
-            chunk_idx = len(all_metrics)
 
-            # Check topology state before deciding whether to attempt update
-            can_update = (
-                chunks_since_update >= cfg.cooldown_chunks
-                and total_updates < cfg.max_updates
-            )
+            # Observe topology (points only — cheap, no logits)
+            with torch.no_grad():
+                obs_points = self._get_points(current_ids, current_mask)
+                obs_summary = self.tracker.observe(obs_points)
+                topo_state = self.tracker.assess()
 
-            if can_update:
-                # Observe current topology (cheap — just PH computation, no grad)
-                with torch.no_grad():
-                    _, obs_points = self._get_activations(current_ids, current_mask)
-                    self.tracker.observe(obs_points)
-                    topo_state = self.tracker.assess()
+            # Decide whether to attempt update
+            skip_reason = None
+            if chunks_since_update < cfg.cooldown_chunks:
+                skip_reason = "cooldown"
+            elif total_updates >= cfg.max_updates:
+                skip_reason = "max_updates"
+            elif cfg.conditional_ph and topo_state == TopologyState.STABLE:
+                skip_reason = "stable_skip"
 
+            if skip_reason is not None:
+                # Record a no-attempt metric for this chunk
+                all_metrics.append(ChunkMetrics(
+                    chunk_idx=chunk_idx,
+                    topology_state=topo_state.value,
+                    attempts=0,
+                    reason=skip_reason,
+                    eff_rank=obs_summary.eff_rank,
+                    cos_conc=obs_summary.cos_conc,
+                    divergence=self.tracker.divergence_from_baseline(),
+                ))
+                chunks_since_update += 1
+            else:
+                # Determine max attempts based on escalation
                 if cfg.conditional_ph:
-                    # Escalation: decide update attempts based on topology state
-                    if topo_state == TopologyState.STABLE:
-                        # Topology is fine — skip PH update entirely
-                        attempts = 0
-                    elif topo_state == TopologyState.DRIFTING:
-                        attempts = cfg.max_attempts_drifting
-                    else:  # COLLAPSING
-                        attempts = cfg.max_attempts_collapsing
+                    max_attempts = (
+                        cfg.max_attempts_collapsing if topo_state == TopologyState.COLLAPSING
+                        else cfg.max_attempts_drifting
+                    )
                 else:
-                    # No escalation — always try once (original behavior)
-                    attempts = 1
+                    max_attempts = 1
 
-                for attempt in range(attempts):
-                    metrics = self._try_update(current_ids, current_mask, chunk_idx)
-                    all_metrics.append(metrics)
+                best_metrics = None
+                for attempt in range(max_attempts):
+                    metrics = self._try_update(current_ids, current_mask, chunk_idx, topo_state)
+                    best_metrics = metrics
 
                     if metrics.accepted:
                         total_updates += 1
                         chunks_since_update = 0
                         break
                 else:
-                    # No attempts or all rejected
                     chunks_since_update += 1
-            else:
-                chunks_since_update += 1
+
+                if best_metrics is not None:
+                    best_metrics.attempts = min(attempt + 1, max_attempts) if max_attempts > 0 else 0
+                    all_metrics.append(best_metrics)
+
+            chunk_idx += 1
 
         return current_ids, all_metrics
