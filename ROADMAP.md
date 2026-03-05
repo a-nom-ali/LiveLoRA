@@ -19,14 +19,18 @@ This roadmap is organized into phases, each with clear goals and deliverables. E
   - [x] Betti number targeting loss
   - [x] Diagram divergence loss (adapted vs. reference)
 - [x] Core TTT loop implementation
-- [x] Toy experiment script (GPT-2 on CPU)
+- [x] Toy experiment script (default: Qwen3.5-0.8B)
 - [x] Unit tests for adapter + PH loss
+- [x] ChatGPT export data loader for test conversations
+- [x] Auto target module detection for LoRA across architectures
 - [ ] **Validate**: run `toy_ttt.py`, confirm loss decreases, LoRA weights change
 - [ ] **Benchmark**: measure PH computation time vs. activation size (sweep `max_points` from 16 to 512)
+- [ ] **Correlation study**: measure topology (Betti numbers, persistence diagrams) of activations on varied inputs, correlate with output quality (perplexity, accuracy) — does topology predict quality *before* any adaptation?
+- [ ] **PCA projection**: test dimensionality reduction (e.g., 16 dims) before PH to speed computation and improve gradient quality
 - [ ] Document findings: what works, what's slow, gradient quality observations
 
 ### Key risks to probe
-- PH gradients may be sparse/noisy — does the loss actually decrease?
+- PH gradients may be sparse/noisy — does the loss actually decrease? Consider **persistence landscapes** as a smoother alternative
 - GUDHI's numpy detour breaks the autograd graph for some operations — verify gradient flow
 - Memory: how large can activation point clouds be before PH becomes intractable?
 
@@ -36,47 +40,71 @@ This roadmap is organized into phases, each with clear goals and deliverables. E
 
 **Question**: *Does topological refinement produce measurably better outputs on a real LLM?*
 
-**Goal**: Move from GPT-2 toy to a real instruction-following model (Gemma-2-2B or TinyLlama-1.1B). Define evaluation metrics and run controlled experiments.
+**Goal**: Run controlled experiments on Qwen3.5-0.8B/2B. The killer comparison (from feedback): **no adaptation vs. entropy-loss TTT vs. PH-loss TTT (LiveLoRA)**. If PH wins even slightly, it's a publishable result.
 
 ### Tasks
 
-- [ ] Port to Gemma-2-2B-it or TinyLlama-1.1B (GPU required)
-- [ ] Design evaluation protocol:
-  - Pick 3-5 tasks where "topological fidelity" could plausibly help (e.g., structured reasoning, code generation, factual consistency)
-  - Define proxy metrics (perplexity, task accuracy, output coherence scores)
-  - Compare: base model vs. static LoRA vs. LiveLoRA (TTT-refined)
-- [ ] Profile latency: measure full TTT loop time per input on consumer GPU (RTX 3090/4090)
+- [ ] **Three-way comparison** on reasoning benchmarks (GSM8K, ARC, BIG-Bench):
+  1. No adaptation (baseline)
+  2. Entropy-loss TTT (existing approach from LoRA-TTT)
+  3. PH-loss TTT (LiveLoRA)
+- [ ] Profile latency: measure full TTT loop time per input on consumer GPU
   - Target: <200ms total overhead for 3 TTT steps
 - [ ] Experiment with PH loss variants:
   - Which homological dimensions matter (H0 only? H0+H1?)?
-  - Which layers' activations to use (last layer? middle? multiple)?
+  - Which layers' activations to use (middle layers are likely more stable than early/late)
   - What `max_points` gives the best quality/speed tradeoff?
+  - **Persistence landscapes** vs. raw diagrams for gradient smoothness
+  - **Wasserstein distance** between diagrams as loss
+- [ ] Test with ChatGPT conversation data as real-world input distribution
 - [ ] Add Weights & Biases logging to experiments
+- [ ] **Visualization**: plot persistence diagrams, Betti curves, activation manifold projections (PCA/UMAP) — these figures are essential for understanding and communicating results
 
 ### Expected outcomes
-- Clarity on whether topological loss improves outputs vs. random LoRA perturbation
+- Clarity on whether topological loss improves outputs vs. entropy-based TTT
 - Latency profile to determine if real-time use is feasible
 - Understanding of which PH features (dimensions, layers) carry signal
 
+### What "healthy reasoning topology" looks like (hypothesis)
+- One main connected component (coherence)
+- A few persistent loops (cross-linking constraints)
+- Not too many short-lived noisy features (confusion/drift)
+
 ---
 
-## Phase 2 — ScaleNet & Dynamic Modulation
+## Phase 2 — LiveLoRA-Delta: Chunked Generation & Topology Gating
 
-**Question**: *Can learned per-layer LR modulation improve TTT convergence?*
+**Question**: *Can we adapt LoRA during generation at chunk boundaries, guided by topology gates?*
 
-**Goal**: Train a ScaleNet that predicts optimal per-layer learning rates from the topological signal, replacing fixed LR for all layers.
+**Goal**: Instead of adapting once per prompt, adapt at selected points during generation when topology destabilizes. This is the "live" in LiveLoRA.
 
 ### Tasks
 
-- [ ] Implement ScaleNet-modulated optimizer (per-layer LR = base_lr * scale_factor)
-- [ ] Data collection: run Phase 1 experiments with per-layer gradient logging
-- [ ] Train ScaleNet on collected data (meta-learning: inner loop = TTT, outer loop = ScaleNet)
-- [ ] Compare convergence: fixed LR vs. ScaleNet-modulated, across inputs
-- [ ] Explore surprise-proportional variants (Titans-style: scale ∝ gradient magnitude)
-- [ ] Ablation: how many ScaleNet params are needed? (tiny MLP vs. per-layer scalar)
+- [ ] Implement `core/gen_controller.py` — chunked generation controller:
+  - Configurable chunk size (default: 32 tokens)
+  - Update gate: only adapt when PH loss > threshold or deviates sharply from rolling baseline
+  - Update cooldown: don't allow updates on consecutive chunks unless loss is severe
+  - Tiny LR + single step per update event
+- [ ] Implement `topology/ph_tracker.py` — rolling topology baseline:
+  - Store persistence summary stats from earlier chunks
+  - Compare current chunk's diagram to baseline (Wasserstein distance)
+  - Detect: stable, destabilizing, or collapsing topology
+- [ ] **Three-way comparison** on reasoning tasks:
+  1. No adaptation
+  2. Adapt once per prompt (Phase 1 approach)
+  3. Adapt per chunk with gate (LiveLoRA-Delta)
+- [ ] Measure: accuracy, average PH update count per generation, latency overhead
+- [ ] Integrate ScaleNet-modulated optimizer (per-layer LR = base_lr * scale_factor)
+- [ ] Explore surprise-proportional variants (Titans-style: scale proportional to gradient magnitude)
+
+### Stability constraints (all four together)
+1. Tiny LR + single gradient step per update event
+2. Elastic drift anchor (L2 toward initial adapter)
+3. Small LoRA rank (4-8)
+4. Update cooldown (skip consecutive chunks)
 
 ### Dependencies
-- Requires solid Phase 1 results showing TTT actually helps
+- Requires solid Phase 1 results showing per-prompt TTT actually helps
 
 ---
 
@@ -120,21 +148,52 @@ This roadmap is organized into phases, each with clear goals and deliverables. E
 
 ---
 
-## Phase 5 — Advanced Topology & Research
+## Phase 5 — Aspirational Research
 
-**Question**: *What topological signals are most useful, and can we go beyond basic PH?*
+**Question**: *What becomes possible when topology-guided inference-time adaptation actually works?*
 
-These are research explorations once the core system is solid.
+These are ambitious research directions once the core system is validated.
 
-### Ideas to investigate
+### Branching LoRA States (Topology-Guided Beam Search)
 
+The most exciting idea: for ambiguous problems, maintain **2-4 competing LoRA adapter states** during generation. Each branch adapts slightly differently, each gets a topology score + token logprob score, and periodically prune to the most topologically coherent branch. This is beam search where **the beams have different adapter states** — exploring multiple representation manifold paths simultaneously.
+
+### Task-Specific Topology Priors
+
+Move PH from unsupervised to **semantically constrained**:
+- **Classification**: each class = separate connected component; maximize persistence of class clusters
+- **Reasoning**: trajectory manifold should be smooth; penalize topological discontinuities
+- **RAG**: retrieved embeddings should form loops linking concepts; reward H1 features connecting query to evidence
+
+This turns topology into a semantic constraint, not just a structural one.
+
+### Topological Memory Systems
+
+LLM + LoRA substrate + topology feedback = a model that **reshapes its internal geometry per query**. This is closer to adaptive representation geometry — how biological neural systems behave. The model maintains a topological "self-model" of its representations and actively optimizes it.
+
+### Advanced PH Techniques
+
+- [ ] **Persistence landscapes** for smoother, more stable gradients than raw diagrams
 - [ ] **Cubical persistence** for image/vision model activations (faster than Rips for grid data)
 - [ ] **Multi-scale PH**: compute PH at multiple filtration scales, weight loss by scale
 - [ ] **Topological attention**: use PH features to modulate attention weights directly
 - [ ] **Cross-layer topology**: compute PH on activations concatenated across layers (not per-layer)
-- [ ] **Task-specific topological priors**: learn target Betti numbers per task type
 - [ ] **Continuous LoRA rank adaptation**: dynamically adjust LoRA rank based on topological complexity
 - [ ] **Online-LoRA with Laplace**: use Laplace approximation regularization for continuous streams (per Online-LoRA, WACV 2025)
+
+---
+
+## Paper Framing
+
+If this works, the paper positioning is:
+
+> **LiveLoRA: Topological Test-Time Adaptation for Large Language Models**
+>
+> LoRA = parameter substrate. TTT = adaptation protocol. PH = structural signal.
+>
+> We introduce a new class of inference-time losses based on topological invariants of representation manifolds.
+
+The key claim: most representation learning optimizes distance/similarity/entropy/contrast. LiveLoRA optimizes **topological invariants** — a qualitatively different signal.
 
 ---
 

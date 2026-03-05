@@ -8,28 +8,49 @@ This is a novel intersection — no existing work combines topological signals w
 
 ## How It Works
 
+Two modes of operation:
+
+### Per-prompt adaptation (LiveLoRA)
+
 ```
-Input → Forward pass with LoRA → Extract activations → Compute PH loss → Backprop → Update LoRA → Repeat (1-3 steps)
+Input → Forward pass with LoRA → Extract activations → Compute PH loss → Backprop → Update LoRA → Repeat (1-3 steps) → Generate
 ```
 
-1. **Warm-start** (future): A hypernetwork produces an initial LoRA adapter from the input in one forward pass
-2. **Topological refinement**: For each input, compute persistent homology on activation point clouds, define a topological fidelity loss, and update LoRA weights with a few gradient steps
-3. **Stability**: Adapt-and-reset pattern (checkpoint/restore LoRA per query) with L2 drift regularization and gradient clipping
+### Chunked generation adaptation (LiveLoRA-Delta)
+
+```
+Prompt → Generate chunk (32 tokens) → Check topology → Update LoRA if destabilized → Generate next chunk → ...
+```
+
+LiveLoRA-Delta adapts *during* generation at chunk boundaries, using topology as a "structural health check." A gating mechanism only triggers LoRA updates when the activation manifold destabilizes — making it "live" without constant training overhead.
+
+### Core components
+
+1. **Topological refinement**: Compute persistent homology on activation point clouds, define a topological fidelity loss, and update LoRA weights with a few gradient steps
+2. **Topology gating**: Only adapt when needed — stable topology skips updates, destabilizing topology triggers small corrections, collapsing topology triggers stronger intervention
+3. **Stability**: Adapt-and-reset pattern (checkpoint/restore LoRA per query) with L2 drift regularization, gradient clipping, and update cooldowns
+4. **Warm-start** (future): A hypernetwork produces an initial LoRA adapter from the input in one forward pass
 
 ### What is persistent homology doing here?
 
 Persistent homology captures the *shape* of data — connected components, loops, voids — across scales. Applied to model activations, it tells us whether the internal representations have the right topological structure. The PH loss is fully differentiable, so gradients flow from topological features through the distance matrix back to LoRA parameters.
+
+Most representation learning optimizes distance, similarity, entropy, or contrast. LiveLoRA optimizes **topological invariants** — a qualitatively different signal that captures the geometry of the representation manifold itself.
 
 ## Architecture
 
 ```
 livelora/
 ├── core/
-│   ├── lora_adapter.py    # PEFT wrapper with checkpoint/restore, selective gradients
-│   ├── ttt_loop.py        # Test-time training engine (the main loop)
+│   ├── lora_adapter.py    # PEFT wrapper with checkpoint/restore, auto target detection
+│   ├── ttt_loop.py        # Test-time training engine (per-prompt adaptation)
+│   ├── gen_controller.py  # (Planned) Chunked generation with topology gating
 │   └── scalenet.py        # Per-layer LR modulation (surprise-proportional)
 ├── topology/
-│   └── ph_loss.py         # Differentiable PH losses (persistence, Betti, divergence)
+│   ├── ph_loss.py         # Differentiable PH losses (persistence, Betti, divergence)
+│   └── ph_tracker.py      # (Planned) Rolling topology baseline + divergence detection
+├── data/
+│   └── chatgpt_loader.py  # OpenAI ChatGPT export parser for test data
 └── warmstart/             # (Planned) Perceiver-style initialization hypernetwork
 ```
 
@@ -86,8 +107,10 @@ pytest tests/
 | **Test-time training (TTT)** | Updating model weights during inference, not just during training |
 | **Persistent homology (PH)** | Mathematical tool that captures topological features (components, loops) of point clouds at multiple scales |
 | **Topological fidelity loss** | A differentiable loss that penalizes when activations have the wrong topological structure |
+| **LiveLoRA-Delta** | Chunked generation with topology-gated adaptation — adapt mid-generation only when the manifold destabilizes |
 | **Adapt-and-reset** | Checkpoint LoRA before each input, refine, generate, then restore — each query gets fresh adaptation |
 | **ScaleNet** | A tiny network that predicts per-layer learning rates based on the current topological signal (surprise-proportional) |
+| **Topology gating** | Only update LoRA when PH loss exceeds threshold or deviates from rolling baseline — skip updates when topology is stable |
 
 ## Research Foundations
 
@@ -99,7 +122,7 @@ This project synthesizes ideas from:
 - **Clough et al.** (IEEE TPAMI 2020) — Differentiable PH losses for neural networks
 - **Text-to-LoRA / Doc-to-LoRA** (Sakana AI) — Hypernetwork-based adapter generation (inspiration for warm-start)
 
-See [`LiveLoRA - Brief.md`](LiveLoRA%20-%20Brief.md) for the full research analysis.
+See [`LiveLoRA - Brief.md`](LiveLoRA%20-%20Brief.md) for the full research analysis and [`ChatGPT - Feedback.md`](ChatGPT%20-%20Feedback.md) for detailed technical feedback that shaped the roadmap.
 
 ## Current Status
 
