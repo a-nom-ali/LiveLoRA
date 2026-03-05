@@ -16,11 +16,19 @@ import torch.nn as nn
 
 try:
     import gudhi
-    from gudhi.wasserstein import wasserstein_distance as gudhi_wasserstein
 
     GUDHI_AVAILABLE = True
 except ImportError:
     GUDHI_AVAILABLE = False
+
+# Wasserstein distance is optional (requires POT library)
+try:
+    from gudhi.wasserstein import wasserstein_distance as gudhi_wasserstein
+
+    WASSERSTEIN_AVAILABLE = True
+except ImportError:
+    gudhi_wasserstein = None
+    WASSERSTEIN_AVAILABLE = False
 
 
 @dataclass
