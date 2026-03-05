@@ -1,13 +1,15 @@
 """Toy proof-of-concept: test-time LoRA refinement with topological loss.
 
 This is a minimal experiment to validate the core loop works end-to-end:
-1. Load a small model (e.g., GPT-2 or TinyLlama)
+1. Load a small model (default: Qwen3.5-0.8B)
 2. Attach LoRA
 3. Run TTT loop with PH loss on activations
 4. Verify that LoRA weights change and loss decreases
 
 Run:
-    python experiments/toy_ttt.py [--model gpt2] [--steps 5] [--rank 4]
+    python experiments/toy_ttt.py
+    python experiments/toy_ttt.py --model Qwen/Qwen3.5-2B --steps 3
+    python experiments/toy_ttt.py --model gpt2 --steps 5  # fallback for CPU-only
 """
 
 from __future__ import annotations
@@ -18,19 +20,23 @@ import time
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-from livelora.core.lora_adapter import LiveLoraConfig, LiveLoraModel
+from livelora.core.lora_adapter import LiveLoraConfig, LiveLoraModel, get_lora_target_modules
 from livelora.core.ttt_loop import TTTConfig, TTTLoop
 from livelora.topology.ph_loss import DifferentiablePHLoss
+
+# Default model: Qwen3.5-0.8B — small enough for CPU, modern architecture
+DEFAULT_MODEL = "Qwen/Qwen3.5-0.8B"
 
 
 def main():
     parser = argparse.ArgumentParser(description="Toy TTT experiment")
-    parser.add_argument("--model", default="gpt2", help="HuggingFace model name")
+    parser.add_argument("--model", default=DEFAULT_MODEL, help="HuggingFace model name")
     parser.add_argument("--steps", type=int, default=5, help="Number of TTT steps")
     parser.add_argument("--rank", type=int, default=4, help="LoRA rank")
     parser.add_argument("--lr", type=float, default=1e-3, help="Learning rate")
     parser.add_argument("--prompt", default="The topology of neural representations", help="Input")
     parser.add_argument("--device", default="auto", help="Device (auto/cpu/cuda)")
+    parser.add_argument("--dtype", default="auto", help="Model dtype (auto/float32/bfloat16)")
     args = parser.parse_args()
 
     # Resolve device
@@ -39,7 +45,13 @@ def main():
     else:
         device = args.device
 
-    print(f"Device: {device}")
+    # Resolve dtype — use bfloat16 on GPU for Qwen3.5, float32 on CPU
+    if args.dtype == "auto":
+        dtype = torch.bfloat16 if device == "cuda" else torch.float32
+    else:
+        dtype = getattr(torch, args.dtype)
+
+    print(f"Device: {device}, dtype: {dtype}")
     print(f"Model: {args.model}")
     print(f"LoRA rank: {args.rank}, LR: {args.lr}, Steps: {args.steps}")
     print()
@@ -47,19 +59,24 @@ def main():
     # Load model + tokenizer
     print("Loading model...")
     tokenizer = AutoTokenizer.from_pretrained(args.model)
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
+
     base_model = AutoModelForCausalLM.from_pretrained(
         args.model,
-        torch_dtype=torch.float32,
+        torch_dtype=dtype,
         device_map=device if device != "cpu" else None,
     )
     if device == "cpu":
         base_model = base_model.to(device)
 
-    # Wrap with LiveLoRA
+    # Wrap with LiveLoRA — auto-detect target modules for the model architecture
+    target_modules = get_lora_target_modules(base_model)
     lora_config = LiveLoraConfig(
         rank=args.rank,
-        target_modules=["c_attn"] if "gpt2" in args.model else ["q_proj", "v_proj"],
+        target_modules=target_modules,
     )
+    print(f"LoRA target modules: {target_modules}")
     model = LiveLoraModel(base_model, lora_config)
 
     # Count params

@@ -23,8 +23,9 @@ pip install -e ".[dev]"
 # Run tests
 pytest tests/
 
-# Run toy experiment (CPU-compatible, uses GPT-2)
-python experiments/toy_ttt.py --model gpt2 --steps 5 --rank 4
+# Run toy experiment (default: Qwen3.5-0.8B, or gpt2 as fallback)
+python experiments/toy_ttt.py
+python experiments/toy_ttt.py --model gpt2 --steps 5  # smaller download
 
 # Lint
 ruff check livelora/ tests/
@@ -45,7 +46,7 @@ The system has three layers, built bottom-up:
 ### Key design decisions
 - GUDHI is used for PH (numpy-based), with careful handling to maintain differentiability through the distance matrix
 - PH is computed on subsampled activation point clouds (default 64-256 points) for tractability
-- LoRA uses HuggingFace PEFT — standard rank-8 on q_proj/v_proj (or c_attn for GPT-2)
+- LoRA uses HuggingFace PEFT — `get_lora_target_modules()` auto-detects target layers per architecture (q_proj/v_proj for Qwen/Llama/Gemma, c_attn for GPT-2)
 - Adapt-and-reset is the default: checkpoint LoRA before each query, restore after generation
 
 ## Key Dependencies

@@ -16,6 +16,46 @@ import torch.nn as nn
 from peft import LoraConfig, get_peft_model
 from transformers import PreTrainedModel
 
+# LoRA target modules per model architecture.
+# Maps model_type (from config.json) to the linear layers worth adapting.
+LORA_TARGET_MODULES = {
+    # Qwen3.5 (hybrid Gated DeltaNet + attention)
+    "qwen3": ["q_proj", "v_proj"],
+    # Qwen2 / Qwen2.5
+    "qwen2": ["q_proj", "v_proj"],
+    # Llama-family (Llama 2/3, CodeLlama, TinyLlama)
+    "llama": ["q_proj", "v_proj"],
+    # Gemma (Google)
+    "gemma": ["q_proj", "v_proj"],
+    "gemma2": ["q_proj", "v_proj"],
+    # Mistral / Mixtral
+    "mistral": ["q_proj", "v_proj"],
+    # Phi-2/3
+    "phi": ["q_proj", "v_proj"],
+    "phi3": ["q_proj", "v_proj"],
+    # GPT-2 (uses fused c_attn)
+    "gpt2": ["c_attn"],
+}
+
+
+def get_lora_target_modules(model: PreTrainedModel) -> list[str]:
+    """Auto-detect LoRA target modules based on model architecture.
+
+    Falls back to ["q_proj", "v_proj"] for unknown architectures.
+    """
+    model_type = getattr(model.config, "model_type", "").lower()
+
+    # Direct match
+    if model_type in LORA_TARGET_MODULES:
+        return LORA_TARGET_MODULES[model_type]
+
+    # Partial match (e.g., "qwen3_5" matches "qwen3")
+    for key, modules in LORA_TARGET_MODULES.items():
+        if key in model_type or model_type in key:
+            return modules
+
+    return ["q_proj", "v_proj"]
+
 
 @dataclass
 class LiveLoraConfig:

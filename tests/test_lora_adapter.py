@@ -7,7 +7,11 @@ import torch
 transformers = pytest.importorskip("transformers")
 peft = pytest.importorskip("peft")
 
-from livelora.core.lora_adapter import LiveLoraConfig, LiveLoraModel
+from livelora.core.lora_adapter import (
+    LiveLoraConfig,
+    LiveLoraModel,
+    get_lora_target_modules,
+)
 
 
 @pytest.fixture
@@ -27,8 +31,24 @@ def tiny_model():
 
 @pytest.fixture
 def lora_model(tiny_model):
-    config = LiveLoraConfig(rank=4, target_modules=["c_attn"])
+    target_modules = get_lora_target_modules(tiny_model)
+    config = LiveLoraConfig(rank=4, target_modules=target_modules)
     return LiveLoraModel(tiny_model, config)
+
+
+class TestGetLoraTargetModules:
+    def test_gpt2(self, tiny_model):
+        modules = get_lora_target_modules(tiny_model)
+        assert modules == ["c_attn"]
+
+    def test_unknown_fallback(self):
+        """Unknown architectures should fall back to q_proj/v_proj."""
+        from unittest.mock import MagicMock
+
+        mock_model = MagicMock()
+        mock_model.config.model_type = "totally_unknown_arch"
+        modules = get_lora_target_modules(mock_model)
+        assert modules == ["q_proj", "v_proj"]
 
 
 class TestLiveLoraModel:

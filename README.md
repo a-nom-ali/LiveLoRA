@@ -55,15 +55,22 @@ pip install -e ".[full]"
 
 ### Run the toy experiment
 
-Validates the full loop end-to-end on GPT-2 (CPU-compatible):
+Validates the full loop end-to-end (default: Qwen3.5-0.8B):
 
 ```bash
-python experiments/toy_ttt.py --model gpt2 --steps 5 --rank 4
+# Default: Qwen3.5-0.8B (~3GB VRAM with LoRA, runs on CPU too)
+python experiments/toy_ttt.py
+
+# Larger model for better quality
+python experiments/toy_ttt.py --model Qwen/Qwen3.5-2B --steps 3
+
+# GPT-2 fallback (smallest download, good for CI)
+python experiments/toy_ttt.py --model gpt2 --steps 5
 ```
 
 This will:
-- Load GPT-2 with a rank-4 LoRA
-- Run 5 TTT steps with PH-based topological loss
+- Load the model with a rank-4 LoRA (auto-detects target modules)
+- Run TTT steps with PH-based topological loss
 - Report loss trajectory and LoRA weight changes
 
 ### Run tests
