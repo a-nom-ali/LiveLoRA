@@ -151,6 +151,12 @@ class PHTracker:
     def assess(self) -> TopologyState:
         """Assess current topological stability relative to baseline.
 
+        Distinguishes topology *degradation* (features disappearing,
+        persistence dropping) from topology *expansion* (more features
+        from growing sequences, which is normal).
+
+        Only degradation triggers DRIFTING/COLLAPSING states.
+
         Returns:
             TopologyState indicating whether an update is warranted.
         """
@@ -160,39 +166,53 @@ class PHTracker:
         current = self._history[-1]
         baseline = self._baseline
 
-        # Compute relative divergence across multiple signals
-        divergences = []
+        # Compute directional degradation score (only penalize decreases)
+        degradation = self._degradation_score(baseline, current)
 
-        # Betti number divergence
-        if baseline.betti_0 > 0:
-            divergences.append(abs(current.betti_0 - baseline.betti_0) / max(baseline.betti_0, 1))
-        if baseline.betti_1 > 0:
-            divergences.append(abs(current.betti_1 - baseline.betti_1) / max(baseline.betti_1, 1))
+        # Also check rate-of-change between consecutive observations
+        rate_degradation = 0.0
+        if len(self._history) >= 2:
+            prev = self._history[-2]
+            rate_degradation = self._degradation_score(prev, current)
 
-        # Total persistence divergence
-        if baseline.total_persistence > 0:
-            divergences.append(
-                abs(current.total_persistence - baseline.total_persistence)
-                / baseline.total_persistence
-            )
+        # Combine: sustained degradation from baseline + sudden drops
+        combined = max(degradation, rate_degradation)
 
-        # Feature count divergence
-        if baseline.num_features > 0:
-            divergences.append(
-                abs(current.num_features - baseline.num_features) / baseline.num_features
-            )
-
-        if not divergences:
-            return TopologyState.STABLE
-
-        avg_divergence = sum(divergences) / len(divergences)
-
-        if avg_divergence >= self.collapse_threshold:
+        if combined >= self.collapse_threshold:
             return TopologyState.COLLAPSING
-        elif avg_divergence >= self.drift_threshold:
+        elif combined >= self.drift_threshold:
             return TopologyState.DRIFTING
         else:
             return TopologyState.STABLE
+
+    @staticmethod
+    def _degradation_score(reference: TopologySummary, current: TopologySummary) -> float:
+        """Compute topology degradation score (only penalizes decreases).
+
+        Increases in features/persistence (from longer sequences) are
+        NOT penalized — only loss of topological structure counts.
+        """
+        scores = []
+
+        # Betti number decrease (loss of connected components)
+        if reference.betti_0 > 0:
+            decrease = max(reference.betti_0 - current.betti_0, 0)
+            scores.append(decrease / reference.betti_0)
+        if reference.betti_1 > 0:
+            decrease = max(reference.betti_1 - current.betti_1, 0)
+            scores.append(decrease / reference.betti_1)
+
+        # Total persistence decrease (loss of structural features)
+        if reference.total_persistence > 0:
+            decrease = max(reference.total_persistence - current.total_persistence, 0)
+            scores.append(decrease / reference.total_persistence)
+
+        # Feature count decrease
+        if reference.num_features > 0:
+            decrease = max(reference.num_features - current.num_features, 0)
+            scores.append(decrease / reference.num_features)
+
+        return sum(scores) / len(scores) if scores else 0.0
 
     def divergence_from_baseline(self) -> float:
         """Scalar divergence measure from baseline (for logging)."""

@@ -44,10 +44,12 @@ class TestPHTracker:
     def test_detects_collapse(self, tracker):
         # Normal data as baseline
         tracker.set_baseline(torch.randn(32, 16))
-        # Collapsed data (all same point)
+        # First observation: slight drift
+        tracker.observe(torch.randn(32, 16) * 0.5)
+        # Second observation: sudden collapse (all same point)
         tracker.observe(torch.ones(32, 16) + 0.001 * torch.randn(32, 16))
         state = tracker.assess()
-        # Should detect significant change
+        # Should detect significant change (either drifting or collapsing)
         assert state in (TopologyState.DRIFTING, TopologyState.COLLAPSING)
 
     def test_reset_clears_state(self, tracker):

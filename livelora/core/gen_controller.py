@@ -46,6 +46,11 @@ class DeltaConfig:
     cooldown_chunks: int = 1  # Min chunks between updates
     max_updates: int = 10  # Max updates per generation
 
+    # Conditional PH escalation
+    conditional_ph: bool = True  # Enable topology-state-gated PH
+    max_attempts_drifting: int = 1  # Max update attempts when DRIFTING
+    max_attempts_collapsing: int = 2  # Max update attempts when COLLAPSING
+
 
 @dataclass
 class ChunkMetrics:
@@ -217,8 +222,7 @@ class GenerationController:
                 if "lora_" in name and name in candidate_checkpoint:
                     param.data.copy_(candidate_checkpoint[name])
 
-        # Observe topology for tracker
-        topology_state = self.tracker.observe(points_after.detach())
+        # Use last assessed state from the generate loop
         state = self.tracker.assess()
 
         return ChunkMetrics(
@@ -300,20 +304,42 @@ class GenerationController:
             total_generated += new_tokens
             chunk_idx = len(all_metrics)
 
-            # Topology check + candidate update
-            should_try = (
+            # Check topology state before deciding whether to attempt update
+            can_update = (
                 chunks_since_update >= cfg.cooldown_chunks
                 and total_updates < cfg.max_updates
             )
 
-            if should_try:
-                metrics = self._try_update(current_ids, current_mask, chunk_idx)
-                all_metrics.append(metrics)
+            if can_update:
+                # Observe current topology (cheap — just PH computation, no grad)
+                with torch.no_grad():
+                    _, obs_points = self._get_activations(current_ids, current_mask)
+                    self.tracker.observe(obs_points)
+                    topo_state = self.tracker.assess()
 
-                if metrics.accepted:
-                    total_updates += 1
-                    chunks_since_update = 0
+                if cfg.conditional_ph:
+                    # Escalation: decide update attempts based on topology state
+                    if topo_state == TopologyState.STABLE:
+                        # Topology is fine — skip PH update entirely
+                        attempts = 0
+                    elif topo_state == TopologyState.DRIFTING:
+                        attempts = cfg.max_attempts_drifting
+                    else:  # COLLAPSING
+                        attempts = cfg.max_attempts_collapsing
                 else:
+                    # No escalation — always try once (original behavior)
+                    attempts = 1
+
+                for attempt in range(attempts):
+                    metrics = self._try_update(current_ids, current_mask, chunk_idx)
+                    all_metrics.append(metrics)
+
+                    if metrics.accepted:
+                        total_updates += 1
+                        chunks_since_update = 0
+                        break
+                else:
+                    # No attempts or all rejected
                     chunks_since_update += 1
             else:
                 chunks_since_update += 1
