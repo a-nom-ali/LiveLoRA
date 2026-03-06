@@ -117,7 +117,7 @@ Performance peaks at ~20% acceptance and drops at both extremes. This matches **
 **Identical accuracy, dramatically different consistency.** The 0.8B model is below the capability threshold for GSM8K — adaptation stabilizes outputs but can't improve correctness on tasks the model fundamentally can't solve. PH gating makes the model *consistently wrong* rather than *randomly wrong*.
 
 ### In progress
-- [ ] **GSM8K on Qwen3.5-7B** — test correctness at a scale where the model can sometimes solve the task
+- [ ] **GSM8K on larger model (Qwen3.5-4B+)** — test correctness at a scale where the model can sometimes solve the task. Requires disk space (C: drive is full) or cloud GPU.
 - [ ] Integrate ScaleNet into gen_controller
 - [ ] Track first_collapse_chunk vs error_chunk timing
 
