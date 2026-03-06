@@ -116,6 +116,13 @@ python experiments/delta_comparison.py --model Qwen/Qwen3.5-0.8B --device auto
 
 # Gate ablation: isolate where the win comes from
 python experiments/gate_ablation.py --model Qwen/Qwen3.5-0.8B --device auto
+
+# Acceptance threshold sweep: validate MCMC interpretation
+python experiments/threshold_sweep.py --model Qwen/Qwen3.5-0.8B --device auto
+
+# Ground truth benchmark: does gating improve correctness?
+python experiments/gsm8k_benchmark.py --model Qwen/Qwen3.5-0.8B --device auto
+
 ```
 
 ### Run tests

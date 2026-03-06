@@ -139,9 +139,9 @@ Organized into phases, each answering a specific research question before moving
 
 The emerging thesis:
 
-> **LiveLoRA: Topology as Control Law for Adaptive Inference**
+> **LiveLoRA: Structural Metropolis Test-Time Adaptation**
 >
-> Topology-constrained test-time adaptation improves stability by selectively admitting structurally beneficial updates. The key contribution is not "PH beats entropy" but "selective structural gating beats indiscriminate adaptation."
+> Topology-guided structural gating improves inference-time adaptation by selectively admitting only structurally beneficial updates, independent of the optimization signal. The system behaves like a Monte Carlo search in parameter space constrained by persistent homology — a stochastic search with structural filtering where the acceptance criterion matters more than the proposal distribution.
 
 Key claims:
 1. Persistent homology on activation point clouds provides a **structural admission signal** that decides which LoRA updates to accept
