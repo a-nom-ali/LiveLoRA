@@ -45,6 +45,7 @@ def effective_rank(X: torch.Tensor, eps: float = 1e-12) -> float:
     Low effective rank => dimensional collapse (tokens in a low-dim subspace).
     Cheap for N <= 64: computes N x N covariance eigenvalues.
     """
+    X = X.float()  # eigvalsh requires float32 on CUDA
     X = X - X.mean(dim=0, keepdim=True)
     C = (X @ X.T) / max(X.shape[1], 1)
     evals = torch.linalg.eigvalsh(C).clamp_min(eps)
@@ -58,6 +59,7 @@ def mean_abs_cosine(X: torch.Tensor, eps: float = 1e-12) -> float:
 
     High value => tokens too aligned => collapse / attractor dominance.
     """
+    X = X.float()  # norm computation needs float32 on CUDA
     Xn = X / (X.norm(dim=1, keepdim=True) + eps)
     S = Xn @ Xn.T
     n = S.shape[0]

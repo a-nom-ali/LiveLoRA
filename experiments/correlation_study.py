@@ -280,8 +280,7 @@ def main():
         tokenizer.pad_token = tokenizer.eos_token
 
     model = AutoModelForCausalLM.from_pretrained(args.model, torch_dtype=dtype)
-    if device == "cpu":
-        model = model.to(device)
+    model = model.to(device)
     model.eval()
 
     prompts = DEFAULT_PROMPTS[:args.num_prompts]

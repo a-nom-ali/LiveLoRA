@@ -49,8 +49,10 @@ def _activations_to_distance_matrix(activations: torch.Tensor) -> torch.Tensor:
     Returns:
         (n_points, n_points) pairwise Euclidean distance matrix.
     """
-    # Use cdist for numerical stability
-    return torch.cdist(activations.unsqueeze(0), activations.unsqueeze(0)).squeeze(0)
+    # cdist requires float32 on CUDA (bf16 not supported)
+    act = activations.float() if activations.dtype == torch.bfloat16 else activations
+    dm = torch.cdist(act.unsqueeze(0), act.unsqueeze(0)).squeeze(0)
+    return dm.to(activations.dtype) if activations.requires_grad else dm
 
 
 class DifferentiablePHLoss(nn.Module):
@@ -106,7 +108,7 @@ class DifferentiablePHLoss(nn.Module):
         This detaches to numpy for GUDHI, but we use the birth/death values
         to index back into the differentiable distance matrix.
         """
-        dm_np = distance_matrix.detach().cpu().numpy().astype(np.float64)
+        dm_np = distance_matrix.detach().cpu().float().numpy().astype(np.float64)
         rips = gudhi.RipsComplex(distance_matrix=dm_np, max_edge_length=float("inf"))
         st = rips.create_simplex_tree(max_dimension=self.max_dimension + 1)
         st.compute_persistence()

@@ -326,8 +326,7 @@ def main():
         tokenizer.pad_token = tokenizer.eos_token
 
     base_model = AutoModelForCausalLM.from_pretrained(args.model, torch_dtype=dtype)
-    if device == "cpu":
-        base_model = base_model.to(device)
+    base_model = base_model.to(device)
 
     # Wrap with LoRA
     target_modules = get_lora_target_modules(base_model)
