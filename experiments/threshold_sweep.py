@@ -85,6 +85,7 @@ def run_sweep_point(lora_model, tokenizer, prompts, tau_rho, n_samples, chunk_si
     results = []
 
     for i, prompt in enumerate(prompts):
+        print(f"  [{i+1}/{len(prompts)}] ", end="", flush=True)
         config = DeltaConfig(
             chunk_size=chunk_size,
             max_new_tokens=max_tokens,
@@ -125,6 +126,8 @@ def run_sweep_point(lora_model, tokenizer, prompts, tau_rho, n_samples, chunk_si
 
         first_result["consistency"] = compute_self_consistency(samples)
         results.append(first_result)
+        acc_rate = first_result["n_accepted"] / max(first_result["n_attempted"], 1) * 100
+        print(f"cons={first_result['consistency']:.3f} acc={acc_rate:.0f}%", flush=True)
 
     return results
 

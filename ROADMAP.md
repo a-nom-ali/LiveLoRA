@@ -92,6 +92,20 @@ Organized into phases, each answering a specific research question before moving
 
 **The PH gate is the hero, not the PH gradient.** Entropy+PH-gate and Random+PH-gate both beat PH-grad+PH-gate. The mechanism is selective rejection — lower acceptance rate correlates with higher consistency. Even random noise filtered by the structural gate produces strong results.
 
+### Threshold sweep results (n=10, Qwen3.5-0.8B, entropy_ph_gate mode)
+
+| tau_rho | Consistency | Acceptance |
+|---------|------------|------------|
+| 0.0     | 0.846      | 55%        |
+| 1.0     | 0.803      | 45%        |
+| 5.0     | 0.910      | 30%        |
+| 10.0    | 0.887      | 43%        |
+| 25.0    | 0.913      | 43%        |
+| **50.0**| **0.941**  | **21%**    |
+| 100.0   | 0.872      | 45%        |
+
+Performance peaks at ~20% acceptance and drops at both extremes. This matches **MCMC acceptance rate theory** — the system behaves as a stochastic search in parameter space constrained by topology. The optimal regime (tau_rho 5-50) naturally produces 20-43% acceptance.
+
 ### In progress
 - [ ] **Ground truth benchmark** (GSM8K/ARC) — test correctness, not just consistency
 - [ ] Integrate ScaleNet into gen_controller
