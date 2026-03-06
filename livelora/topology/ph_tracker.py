@@ -105,6 +105,7 @@ class PHTracker:
         window_size: int = 5,
         baseline_mode: str = "fixed",
         ema_alpha: float = 0.05,
+        divergence_drift_threshold: float = 1.5,
     ):
         """
         Args:
@@ -116,6 +117,8 @@ class PHTracker:
             window_size: Number of recent summaries to keep for rolling stats.
             baseline_mode: "fixed" (frozen at checkpoint) or "ema" (slow follow).
             ema_alpha: EMA update rate when baseline_mode="ema" and state is STABLE.
+            divergence_drift_threshold: Absolute divergence from baseline to flag drifting.
+                Catches topology expansion (not just degradation). Set to inf to disable.
         """
         self.max_points = max_points
         self.max_dimension = max_dimension
@@ -125,6 +128,7 @@ class PHTracker:
         self.window_size = window_size
         self.baseline_mode = baseline_mode
         self.ema_alpha = ema_alpha
+        self.divergence_drift_threshold = divergence_drift_threshold
 
         self._baseline: TopologySummary | None = None
         self._history: list[TopologySummary] = []
@@ -228,13 +232,17 @@ class PHTracker:
         # Proxy-based collapse cues
         proxy_score = self._proxy_collapse_score(baseline, current)
 
-        # Combine: max of PH signals and proxy signals
+        # Absolute divergence: topology has changed significantly from baseline
+        # (catches expansion, not just degradation)
+        abs_div = self.divergence_from_baseline()
+
+        # Combine: max of degradation signals
         combined = max(degradation, rate_degradation, proxy_score)
 
         state = TopologyState.STABLE
         if combined >= self.collapse_threshold:
             state = TopologyState.COLLAPSING
-        elif combined >= self.drift_threshold:
+        elif combined >= self.drift_threshold or abs_div >= self.divergence_drift_threshold:
             state = TopologyState.DRIFTING
 
         # EMA baseline update: slowly follow when STABLE

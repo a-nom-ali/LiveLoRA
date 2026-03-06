@@ -18,6 +18,7 @@ import torch
 import torch.nn.functional as F
 
 from livelora.core.lora_adapter import LiveLoraModel
+from livelora.topology.entropy_loss import EntropyLoss
 from livelora.topology.ph_loss import DifferentiablePHLoss, _activations_to_distance_matrix
 from livelora.topology.ph_tracker import PHTracker, TopologyState, _deterministic_subsample
 
@@ -51,6 +52,16 @@ class DeltaConfig:
     conditional_ph: bool = True  # Enable topology-state-gated PH
     max_attempts_drifting: int = 1  # Max update attempts when DRIFTING
     max_attempts_collapsing: int = 2  # Max update attempts when COLLAPSING
+
+    # Optimization mode: "ph", "entropy", or "hybrid"
+    #   ph      — optimize PH loss (original LiveLoRA)
+    #   entropy — optimize entropy loss when topology triggers (PH→Entropy)
+    #   hybrid  — optimize alpha*entropy + beta*topo + drift (best in Phase 1)
+    optimization_mode: str = "hybrid"
+    alpha_entropy: float = 1.0  # Weight for entropy term (hybrid/entropy modes)
+    beta_topo: float = 0.01  # Weight for PH term (hybrid mode only)
+    entropy_probe_len: int = 8  # Positions to compute entropy over (tail tokens)
+    divergence_drift_threshold: float = 1.5  # Absolute divergence to trigger DRIFTING
 
 
 @dataclass
@@ -99,9 +110,11 @@ class GenerationController:
             max_dimension=self.config.max_dimension,
             max_points=self.config.max_points,
         )
+        self.entropy_loss = EntropyLoss(reduction="mean")
         self.tracker = PHTracker(
             max_points=self.config.max_points,
             max_dimension=self.config.max_dimension,
+            divergence_drift_threshold=self.config.divergence_drift_threshold,
         )
         # Persistent optimizer (avoids re-creation per candidate step)
         self._optimizer = torch.optim.SGD(
@@ -194,6 +207,66 @@ class GenerationController:
         struct_loss = topo_loss + self.config.lambda_drift * drift
         return struct_loss, topo_loss
 
+    def _compute_optimization_loss(
+        self,
+        input_ids: torch.Tensor,
+        attention_mask: torch.Tensor | None,
+    ) -> torch.Tensor:
+        """Compute the loss to backprop through, based on optimization_mode.
+
+        Returns a scalar loss tensor with gradients.
+        """
+        cfg = self.config
+        mode = cfg.optimization_mode
+
+        if mode == "ph":
+            points = self._get_points(input_ids, attention_mask)
+            struct_loss, _ = self._compute_struct_loss(points)
+            return struct_loss
+
+        elif mode == "entropy":
+            outputs = self.model(
+                input_ids=input_ids,
+                attention_mask=attention_mask,
+            )
+            logits = outputs.logits
+            # Entropy over tail tokens (most relevant for next-token prediction)
+            k = min(cfg.entropy_probe_len, logits.shape[1])
+            tail_logits = logits[:, -k:, :]
+            ent_loss = self.entropy_loss(tail_logits)
+            drift = self.model.lora_l2_from_checkpoint()
+            return cfg.alpha_entropy * ent_loss + cfg.lambda_drift * drift
+
+        elif mode == "hybrid":
+            outputs = self.model(
+                input_ids=input_ids,
+                attention_mask=attention_mask,
+                output_hidden_states=True,
+            )
+            logits = outputs.logits
+            # Entropy component
+            k = min(cfg.entropy_probe_len, logits.shape[1])
+            tail_logits = logits[:, -k:, :]
+            ent_loss = self.entropy_loss(tail_logits)
+            # PH component from activations
+            layer_indices = self._resolve_layer_indices()
+            hidden_states = outputs.hidden_states
+            all_points = []
+            for idx in sorted(layer_indices):
+                all_points.append(hidden_states[idx][0])
+            points = torch.cat(all_points, dim=0)
+            points = _deterministic_subsample(points, cfg.max_points)
+            topo_loss = self.ph_loss(points)
+            drift = self.model.lora_l2_from_checkpoint()
+            return (
+                cfg.alpha_entropy * ent_loss
+                + cfg.beta_topo * topo_loss
+                + cfg.lambda_drift * drift
+            )
+
+        else:
+            raise ValueError(f"Unknown optimization_mode: {mode!r}")
+
     def _try_update(
         self,
         input_ids: torch.Tensor,
@@ -205,21 +278,28 @@ class GenerationController:
 
         Steps:
           1. Measure baseline structural + semantic state
-          2. Do one gradient step on LoRA
+          2. Do one gradient step on LoRA (using configured optimization_mode)
           3. Measure post-update state
-          4. Accept or reject based on KL trust + rho gate + improvement
+          4. Accept or reject based on KL trust + topology-aware gate
+
+        Gate logic depends on optimization_mode:
+          - "ph": accept if structural loss improves (rho = d_struct / d_sem)
+          - "entropy"/"hybrid": accept if topology divergence improves
+            (rho_ctl = d_topo_div / d_sem) — the optimizer uses entropy
+            but acceptance is gated on topology improvement
         """
         cfg = self.config
 
-        # (0) Baseline: get logits (for KL) and points (for struct loss) separately
+        # (0) Baseline: logits (for KL), points (for struct measurement), topo divergence
         with torch.no_grad():
             logits_before = self._get_logits(input_ids, attention_mask).detach()
             points_before = self._get_points(input_ids, attention_mask).detach()
 
         struct_before, topo_before = self._compute_struct_loss(points_before)
         drift_before = self.model.lora_l2_from_checkpoint()
+        div_before = self.tracker.divergence_from_baseline()
 
-        # (1) Candidate update: one gradient step
+        # (1) Candidate update: one gradient step using configured loss
         self.model.train()
         candidate_checkpoint = {
             name: param.data.clone()
@@ -227,11 +307,10 @@ class GenerationController:
             if "lora_" in name
         }
 
-        points_grad = self._get_points(input_ids, attention_mask)
-        struct_loss, _ = self._compute_struct_loss(points_grad)
+        opt_loss = self._compute_optimization_loss(input_ids, attention_mask)
 
         self._optimizer.zero_grad()
-        struct_loss.backward()
+        opt_loss.backward()
         torch.nn.utils.clip_grad_norm_(self.model.lora_parameters(), cfg.grad_clip)
         self._optimizer.step()
 
@@ -244,14 +323,32 @@ class GenerationController:
             struct_after, topo_after = self._compute_struct_loss(points_after)
             drift_after = self.model.lora_l2_from_checkpoint()
 
-            # Multi-position KL (not just last token)
+            # Re-observe topology to get post-update divergence
+            obs_after = self.tracker._compute_summary(points_after)
+            # Temporarily check divergence without modifying history
+            div_after = abs(
+                obs_after.total_persistence - self.tracker._baseline.total_persistence
+            ) / max(self.tracker._baseline.total_persistence, 1e-12) if self.tracker._baseline else 0.0
+
+            # Multi-position KL
             kl = self._kl_trust_region(
                 logits_before, logits_after, probe_len=cfg.kl_probe_len,
             )
 
             d_struct = float(struct_before.item()) - float(struct_after.item())
             d_sem = max(kl, 0.0)
-            rho = d_struct / (d_sem + cfg.beta)
+
+            # Gate logic: depends on optimization mode
+            if cfg.optimization_mode == "ph":
+                # Original: rho = structural improvement / semantic cost
+                rho = d_struct / (d_sem + cfg.beta)
+                gate_improvement = d_struct > 0
+            else:
+                # Entropy/hybrid: accept if topology divergence improved OR structural loss improved
+                # Entropy optimization improves output quality even when divergence doesn't drop
+                d_topo_div = div_before - div_after  # positive = divergence decreased
+                rho = d_topo_div / (d_sem + cfg.beta) if d_topo_div > 0 else d_struct / (d_sem + cfg.beta)
+                gate_improvement = d_topo_div > 0 or d_struct > 0
 
         # (3) Accept / reject with reason tracking
         if kl > cfg.epsilon_kl:
@@ -260,7 +357,7 @@ class GenerationController:
         elif rho < cfg.tau_rho:
             accept = False
             reason = "rejected_rho"
-        elif d_struct <= 0:
+        elif not gate_improvement:
             accept = False
             reason = "rejected_no_improvement"
         else:

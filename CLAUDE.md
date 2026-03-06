@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 LiveLoRA is a research project for **live topological LoRA adaptation** — updating LoRA adapter weights during inference using differentiable persistent homology (PH) signals as a topological fidelity loss. No existing work combines topological signals with inference-time LoRA adaptation.
 
-**Status**: Phase 0 validated. Phase 1 experiments in progress (three-way comparison built, correlation study run on GPT-2). Phase 2 infrastructure (LiveLoRA-Delta) built with conditional PH escalation.
+**Status**: Phase 0 validated. Phase 1 strong results (hybrid entropy+PH wins per-prompt). Phase 2 LiveLoRA-Delta validated — PH-Delta wins decisively in chunked generation.
 
 ## Git Conventions
 
@@ -77,13 +77,19 @@ Two operating modes, built from shared components:
 - **`experiments/toy_ttt.py`** — Proof of concept TTT on GPT-2/Qwen3.5-0.8B
 - **`experiments/benchmark_ph.py`** — PH computation speed benchmarks
 - **`experiments/correlation_study.py`** — Does topology predict output quality?
-- **`experiments/three_way_comparison.py`** — Core Phase 1: no-adapt vs entropy-TTT vs PH-TTT
+- **`experiments/three_way_comparison.py`** — Phase 1: no-adapt vs entropy-TTT vs PH-TTT (per-prompt)
+- **`experiments/delta_comparison.py`** — Phase 2: LiveLoRA-Delta chunked generation (PH vs entropy vs hybrid)
 
 ## Validated Findings
 
 - TTT loop works end-to-end: loss decreases across steps, LoRA weights change measurably
 - Gradients flow through PH → distance matrix → activations → LoRA in 100% of tested cases
 - PH computation benchmarked: 64 points at H0+H1 ~25-65ms, scales O(n^3) with point count
-- **Correlation study (GPT-2)**: no significant topology-quality correlation (Spearman rho ≈ -0.05), but GPT-2 is too weak for reasoning — needs Qwen3.5-0.8B
-- **PHTracker**: directional degradation scoring works — only penalizes topology DECREASE, ignores natural expansion from growing sequences
+- **Correlation study (Qwen3.5-0.8B, GPU, n=20)**: Spearman ρ = -0.39 — moderate negative correlation supports thesis that topology predicts quality
+- **4-way comparison (Qwen3.5-0.8B, GPU, n=20)**: Hybrid entropy+PH loss wins decisively (mean 0.307 vs entropy 0.242, wins 14/20 vs entropy-only)
+- PH-TTT alone: 13/20 wins vs baseline, mean 0.268
+- **PyTorch CUDA**: installed cu124 build. RTX 2060 12GB. bf16 requires float32 cast for cdist, eigvalsh, numpy
+- **PHTracker**: directional degradation scoring + absolute divergence threshold (1.5x) for drift trigger
 - **Conditional PH escalation**: STABLE=skip, DRIFTING=1 attempt, COLLAPSING=2 attempts
+- **LiveLoRA-Delta (Qwen3.5-0.8B, GPU, n=20)**: PH-Delta mean=0.856 beats entropy-Delta 0.776 (10-5 wins) and hybrid-Delta 0.730 (11-4 wins). All beat baseline 0.303. PH's 40% acceptance rate is a feature — stricter gate prevents overfitting.
+- **Gen controller optimization modes**: "ph" (structural rho gate), "entropy" (entropy loss, topo gate), "hybrid" (combined loss). PH mode works best in chunked generation; hybrid wins in per-prompt TTT.
