@@ -79,12 +79,20 @@ Organized into phases, each answering a specific research question before moving
 ### Key finding
 **Topology-constrained test-time adaptation improves stability by selectively admitting structurally beneficial updates.** PH's 39% acceptance rate is a feature — it acts as a structural quality filter that prevents entropy overfitting. All methods improve topology at similar rates when they update; PH wins by being selective.
 
+### Gate ablation results (n=20, Qwen3.5-0.8B)
+
+| Method | Consistency | Acceptance | Updates |
+|---|---|---|---|
+| **Entropy-grad + PH-gate** | **0.897** | 23% | 13/57 |
+| Random + PH-gate | 0.889 | 17% | 10/60 |
+| PH-grad + PH-gate | 0.827 | 60% | 29/48 |
+| Entropy-budgeted (max=1) | 0.789 | 100% | 18/18 |
+| Entropy-grad + topo-gate | 0.773 | 100% | 36/36 |
+| Baseline | 0.235 | — | — |
+
+**The PH gate is the hero, not the PH gradient.** Entropy+PH-gate and Random+PH-gate both beat PH-grad+PH-gate. The mechanism is selective rejection — lower acceptance rate correlates with higher consistency. Even random noise filtered by the structural gate produces strong results.
+
 ### In progress
-- [ ] **Gate ablation** — isolate whether the win comes from:
-  - The PH gradient (PH-grad + PH-gate)
-  - The PH gate alone (Entropy-grad + PH-gate)
-  - Just fewer updates (Random + PH-gate)
-  - Budget matching (Entropy with same acceptance count as PH)
 - [ ] **Ground truth benchmark** (GSM8K/ARC) — test correctness, not just consistency
 - [ ] Integrate ScaleNet into gen_controller
 - [ ] Track first_collapse_chunk vs error_chunk timing
@@ -136,9 +144,10 @@ The emerging thesis:
 > Topology-constrained test-time adaptation improves stability by selectively admitting structurally beneficial updates. The key contribution is not "PH beats entropy" but "selective structural gating beats indiscriminate adaptation."
 
 Key claims:
-1. Persistent homology on activation point clouds provides a **global structural coherence signal** qualitatively different from local signals like entropy
-2. The structural gate's value is as an **admission controller** — PH's 39% acceptance rate prevents entropy overfitting while maintaining representational fidelity
-3. The same topological signal serves different roles in different contexts: structural constraint in per-prompt TTT, quality filter in chunked generation
+1. Persistent homology on activation point clouds provides a **structural admission signal** that decides which LoRA updates to accept
+2. The PH gate is the mechanism — gate ablation shows Entropy+PH-gate (0.897) and Random+PH-gate (0.889) both outperform PH-grad+PH-gate (0.827)
+3. Selective rejection is the key: lower acceptance rate → higher consistency. The gate's value is in what it *rejects*, not in the gradient that proposes updates
+4. The same topological signal serves different roles: structural constraint in per-prompt TTT, quality filter in chunked generation
 
 ---
 

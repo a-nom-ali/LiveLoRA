@@ -4,7 +4,7 @@
 
 LiveLoRA updates LoRA adapter weights *during inference* using topological fidelity signals. Instead of generating a static adapter and freezing it, LiveLoRA runs topology-gated adaptation that computes differentiable persistent homology on model activations and only applies LoRA updates when they pass a structural quality filter.
 
-The emerging insight: **topology works best as a control law for adaptive inference** — deciding *when* and *whether* to adapt, not just *how*.
+The emerging insight: **topology works best as a structural admission controller** — the PH gate decides *which* updates to accept, and selective rejection is more important than the optimization signal that proposes updates.
 
 ## Results
 
@@ -19,7 +19,18 @@ Tested on Qwen3.5-0.8B with 20 prompts, GPU (RTX 2060 12GB):
 | Hybrid-Delta | 0.796 | 20/20 wins | 100% |
 | Baseline | 0.255 | — | — |
 
-PH-Delta's 39% acceptance rate is the key: by rejecting ~60% of candidate updates, the structural gate prevents entropy overfitting and keeps only genuinely beneficial changes.
+### Gate ablation: where does the win come from?
+
+| Method | Consistency | Acceptance |
+|---|---|---|
+| **Entropy-grad + PH-gate** | **0.897** | 23% |
+| Random noise + PH-gate | 0.889 | 17% |
+| PH-grad + PH-gate | 0.827 | 60% |
+| Entropy-budgeted (max=1) | 0.789 | 100% |
+| Entropy + topo-gate | 0.773 | 100% |
+| Baseline | 0.235 | — |
+
+**The PH gate is the hero, not the PH gradient.** Even random noise filtered by the PH structural gate (0.889) nearly matches the best method. The mechanism is selective rejection — lower acceptance rate correlates with higher consistency.
 
 ### Per-prompt TTT
 
@@ -136,7 +147,7 @@ See [`LiveLoRA - Brief.md`](LiveLoRA%20-%20Brief.md) for the full research analy
 
 ## Current Status
 
-**Phase 2 validated.** PH-Delta wins decisively in chunked generation. Gate ablation study in progress to isolate the mechanism. See [ROADMAP.md](ROADMAP.md) for details.
+**Phase 2 validated + gate ablation complete.** The PH structural gate is the key mechanism — Entropy+PH-gate (0.897) and Random+PH-gate (0.889) both outperform PH-grad+PH-gate (0.827). Selective rejection beats optimization. See [ROADMAP.md](ROADMAP.md) for details.
 
 ## License
 

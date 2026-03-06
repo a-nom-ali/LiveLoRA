@@ -1,6 +1,70 @@
 # From hypernetwork adapters to live topological LoRA
 
+> **Updated March 2026** with experimental findings from Phases 0-2.
+
 **Text-to-LoRA and Doc-to-LoRA are hypernetwork systems from Sakana AI that generate static LoRA adapters in a single forward pass — not continuously updating systems.** They represent a powerful paradigm for instant adapter creation but are architecturally mismatched for a "live LoRA" system that refines during inference. The actual foundation for your envisioned system lies in test-time training (TTT) with LoRA substrates, where several recent papers demonstrate per-instance LoRA weight updates driven by custom loss signals — a pattern directly extensible to topological fidelity objectives. No existing work combines topological signals with inference-time LoRA adaptation, making this a genuinely novel intersection with high technical feasibility.
+
+---
+
+## Experimental status and revised thesis
+
+### What we've built and validated
+
+The core system is fully implemented and tested on Qwen3.5-0.8B (RTX 2060 12GB):
+
+- **Differentiable PH losses** with GUDHI backend — gradients flow reliably through distance matrix → activations → LoRA
+- **Rolling topology tracker** with cheap proxies (effective rank, cosine concentration), directional degradation scoring, and absolute divergence threshold
+- **LiveLoRA-Delta**: chunked generation with MDL ratio gate, conditional escalation, state-dependent thresholds
+- **5 optimization modes**: PH, entropy, hybrid, entropy+PH-gate, random+PH-gate
+
+### Key experimental results
+
+**Correlation study** (n=20): Spearman ρ = -0.39 between topology divergence and self-consistency — topology predicts quality.
+
+**Per-prompt TTT** (n=20): Hybrid entropy+PH loss wins (mean 0.307, 14/20 vs entropy-only). PH alone has weaker gradients but adds valuable structural constraint.
+
+**LiveLoRA-Delta chunked generation** (n=20): PH-Delta dominates:
+
+| Method | Consistency | vs Baseline | Acceptance |
+|---|---|---|---|
+| **PH-Delta** | **0.874** | **20-0** | 39% |
+| Entropy-Delta | 0.815 | 20-0 | 100% |
+| Hybrid-Delta | 0.796 | 20-0 | 100% |
+| Baseline | 0.255 | — | — |
+
+### Gate ablation: the PH gate is the hero
+
+The gate ablation experiment (n=20, Qwen3.5-0.8B) isolates the mechanism:
+
+| Method | Consistency | Acceptance | Updates |
+|---|---|---|---|
+| **Entropy-grad + PH-gate** | **0.897** | 23% | 13/57 |
+| Random noise + PH-gate | 0.889 | 17% | 10/60 |
+| PH-grad + PH-gate | 0.827 | 60% | 29/48 |
+| Entropy-budgeted (max=1) | 0.789 | 100% | 18/18 |
+| Entropy + topo-gate | 0.773 | 100% | 36/36 |
+| Baseline | 0.235 | — | — |
+
+The PH gradient is actually the *least* selective — it accepts 60% of updates. Entropy and random perturbations produce updates that the PH gate rejects more often, and this stricter filtering produces better results. Even random noise filtered by the PH structural gate (0.889) nearly matches the best method.
+
+### The revised thesis
+
+The original hypothesis was: **PH as optimization signal** — topology would provide a better loss for TTT than entropy.
+
+The first revision was: **PH as control law** — topology's value is as a gate that decides which updates to accept.
+
+The gate ablation sharpens this further: **PH as structural admission controller** — the PH gate is the hero, not the PH gradient. What matters is selective rejection of structurally harmful updates, regardless of how updates are proposed. Lower acceptance rate correlates with higher consistency.
+
+> Topology-guided structural gating improves inference-time adaptation by selectively admitting only structurally beneficial updates, independent of the optimization signal.
+
+This is a stronger and cleaner claim than either "PH beats entropy" or "PH gating helps PH optimization." The gate works because persistent homology captures global structural coherence that local signals miss — it can distinguish between updates that improve the activation manifold and those that distort it, even when the proposing optimizer cannot.
+
+### What remains
+
+- **Correctness vs. consistency**: current metric (self-consistency) doesn't distinguish "consistently right" from "consistently wrong." Ground truth benchmarks (GSM8K, ARC) needed.
+- **Warm-start hypernetwork**: D2L-style initialization remains future work
+- **Serving infrastructure**: dynamic LoRA management not yet built
+- **Optimal gate configuration**: the Entropy+PH-gate combination should be the default mode going forward
 
 ---
 

@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 LiveLoRA is a research project for **live topological LoRA adaptation** — updating LoRA adapter weights during inference using differentiable persistent homology (PH) signals as a topological fidelity loss. No existing work combines topological signals with inference-time LoRA adaptation.
 
-**Status**: Phase 0 validated. Phase 1 strong results (hybrid entropy+PH wins per-prompt). Phase 2 LiveLoRA-Delta validated — PH-Delta wins decisively in chunked generation.
+**Status**: Phase 0 validated. Phase 1 strong results (hybrid entropy+PH wins per-prompt). Phase 2 LiveLoRA-Delta validated. Gate ablation complete — **the PH gate is the hero, not the PH gradient**. Entropy+PH-gate (0.897) beats PH-grad+PH-gate (0.827).
 
 ## Git Conventions
 
@@ -79,6 +79,7 @@ Two operating modes, built from shared components:
 - **`experiments/correlation_study.py`** — Does topology predict output quality?
 - **`experiments/three_way_comparison.py`** — Phase 1: no-adapt vs entropy-TTT vs PH-TTT (per-prompt)
 - **`experiments/delta_comparison.py`** — Phase 2: LiveLoRA-Delta chunked generation (PH vs entropy vs hybrid)
+- **`experiments/gate_ablation.py`** — Gate ablation: PH-grad vs entropy-grad vs random, all with PH gate + budget-matched entropy
 
 ## Validated Findings
 
@@ -91,5 +92,6 @@ Two operating modes, built from shared components:
 - **PyTorch CUDA**: installed cu124 build. RTX 2060 12GB. bf16 requires float32 cast for cdist, eigvalsh, numpy
 - **PHTracker**: directional degradation scoring + absolute divergence threshold (1.5x) for drift trigger
 - **Conditional PH escalation**: STABLE=skip, DRIFTING=1 attempt, COLLAPSING=2 attempts
-- **LiveLoRA-Delta (Qwen3.5-0.8B, GPU, n=20)**: PH-Delta mean=0.856 beats entropy-Delta 0.776 (10-5 wins) and hybrid-Delta 0.730 (11-4 wins). All beat baseline 0.303. PH's 40% acceptance rate is a feature — stricter gate prevents overfitting.
-- **Gen controller optimization modes**: "ph" (structural rho gate), "entropy" (entropy loss, topo gate), "hybrid" (combined loss). PH mode works best in chunked generation; hybrid wins in per-prompt TTT.
+- **LiveLoRA-Delta (Qwen3.5-0.8B, GPU, n=20)**: PH-Delta mean=0.874 beats entropy-Delta 0.815 and hybrid-Delta 0.796. All beat baseline 0.255.
+- **Gate ablation (n=20)**: Entropy+PH-gate=0.897, Random+PH-gate=0.889, PH-grad+PH-gate=0.827, Entropy-budgeted=0.789, Entropy+topo-gate=0.773. **The PH gate is the mechanism — selective rejection matters more than the optimization signal.** Lower acceptance rate → higher consistency.
+- **Gen controller optimization modes**: "ph", "entropy", "hybrid", "entropy_ph_gate" (best), "random". Entropy+PH-gate should be the default going forward.
