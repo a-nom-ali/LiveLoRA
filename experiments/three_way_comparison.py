@@ -27,6 +27,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from livelora.core.lora_adapter import LiveLoraConfig, LiveLoraModel, get_lora_target_modules
 from livelora.topology.ph_loss import DifferentiablePHLoss
+from livelora.topology.ph_tracker import PHTracker, TopologyState, _deterministic_subsample
 
 
 # Reasoning prompts (shared with correlation_study.py)
@@ -215,6 +216,78 @@ def run_ph_ttt(
     return losses
 
 
+def run_ph_triggered_entropy(
+    lora_model: LiveLoraModel,
+    input_ids: torch.Tensor,
+    attention_mask: torch.Tensor | None,
+    target_layer: int = -1,
+    num_steps: int = 3,
+    lr: float = 1e-4,
+    grad_clip: float = 1.0,
+    drift_penalty: float = 0.01,
+    max_points: int = 64,
+) -> tuple[list[float], int]:
+    """PH decides WHEN, entropy decides HOW.
+
+    Uses a hybrid loss: α * entropy + β * topology_loss.
+    PH triggers updates based on proxy signals (effective rank, cosine
+    concentration) rather than requiring pre/post comparison.
+
+    For per-prompt TTT, we use the hybrid approach from the feedback:
+    Loss = α * entropy + β * topo_loss
+
+    This combines entropy's strong gradient with PH's structural constraint.
+    Returns (loss_trajectory, num_updates_triggered).
+    """
+    from livelora.topology.ph_tracker import effective_rank, mean_abs_cosine
+
+    n_layers = lora_model.model.config.num_hidden_layers + 1
+    layer_idx = n_layers + target_layer if target_layer < 0 else target_layer
+
+    ph_loss_fn = DifferentiablePHLoss(max_dimension=0, max_points=max_points)
+    optimizer = torch.optim.Adam(lora_model.lora_parameters(), lr=lr)
+    losses = []
+    updates_triggered = 0
+
+    # Hybrid loss: entropy for gradient strength + PH for structural constraint
+    alpha_entropy = 1.0
+    beta_topo = 0.01  # PH loss is much larger in magnitude, scale down
+
+    for step in range(num_steps):
+        optimizer.zero_grad()
+
+        # Get both logits and hidden states in one pass
+        outputs = lora_model(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            output_hidden_states=True,
+        )
+        logits = outputs.logits
+        acts = outputs.hidden_states[layer_idx][0]
+
+        # Entropy loss
+        probs = F.softmax(logits, dim=-1)
+        log_probs = F.log_softmax(logits, dim=-1)
+        entropy = -(probs * log_probs).sum(dim=-1).mean()
+
+        # PH topology loss (subsample for speed)
+        points = _deterministic_subsample(acts, max_points)
+        topo_loss = ph_loss_fn(points)
+
+        # Drift regularization
+        drift = lora_model.lora_l2_from_checkpoint()
+        total_loss = alpha_entropy * entropy + beta_topo * topo_loss + drift_penalty * drift
+
+        total_loss.backward()
+        torch.nn.utils.clip_grad_norm_(lora_model.lora_parameters(), grad_clip)
+        optimizer.step()
+
+        losses.append(total_loss.item())
+        updates_triggered += 1
+
+    return losses, updates_triggered
+
+
 def run_prompt_three_way(
     base_model,
     lora_model: LiveLoraModel,
@@ -298,6 +371,31 @@ def run_prompt_three_way(
         loss_trajectory=losses_c,
     ))
 
+    # --- Method D: PH-triggered Entropy (PH decides when, entropy decides how) ---
+    t0 = time.perf_counter()
+    lora_model.checkpoint()
+    lora_model.train()
+    losses_d, n_triggered = run_ph_triggered_entropy(
+        lora_model, input_ids, attention_mask,
+        num_steps=num_steps, max_points=max_points,
+    )
+    lora_model.eval()
+    samples_d = generate_samples(
+        lora_model.model, tokenizer, prompt,
+        n_samples=n_samples, max_new_tokens=max_new_tokens, device=device,
+    )
+    lora_model.restore()
+    time_d = time.perf_counter() - t0
+
+    results.append(MethodResult(
+        method="ph_entropy",
+        prompt=prompt,
+        samples=samples_d,
+        self_consistency=compute_self_consistency(samples_d),
+        generation_time=time_d,
+        loss_trajectory=losses_d,
+    ))
+
     return results
 
 
@@ -364,12 +462,19 @@ def main():
     print("THREE-WAY COMPARISON SUMMARY")
     print("=" * 70)
 
-    for method in ["none", "entropy_ttt", "ph_ttt"]:
+    for method in ["none", "entropy_ttt", "ph_ttt", "ph_entropy"]:
         method_results = [r for r in all_results if r.method == method]
+        if not method_results:
+            continue
         consistencies = [r.self_consistency for r in method_results]
         times = [r.generation_time for r in method_results]
 
-        label = {"none": "No adaptation", "entropy_ttt": "Entropy-TTT", "ph_ttt": "PH-TTT (LiveLoRA)"}[method]
+        label = {
+            "none": "No adaptation",
+            "entropy_ttt": "Entropy-TTT",
+            "ph_ttt": "PH-TTT (LiveLoRA)",
+            "ph_entropy": "PH->Entropy (PH triggers, entropy fixes)",
+        }[method]
         print(f"\n{label}:")
         print(f"  Self-consistency:  mean={sum(consistencies)/len(consistencies):.4f}  "
               f"min={min(consistencies):.4f}  max={max(consistencies):.4f}")
@@ -383,24 +488,19 @@ def main():
     none_results = {r.prompt: r for r in all_results if r.method == "none"}
     entropy_results = {r.prompt: r for r in all_results if r.method == "entropy_ttt"}
     ph_results = {r.prompt: r for r in all_results if r.method == "ph_ttt"}
-
-    ph_wins_vs_none = sum(
-        1 for p in prompts[:args.num_prompts]
-        if ph_results[p].self_consistency > none_results[p].self_consistency
-    )
-    ph_wins_vs_entropy = sum(
-        1 for p in prompts[:args.num_prompts]
-        if ph_results[p].self_consistency > entropy_results[p].self_consistency
-    )
-    entropy_wins_vs_none = sum(
-        1 for p in prompts[:args.num_prompts]
-        if entropy_results[p].self_consistency > none_results[p].self_consistency
-    )
+    phe_results = {r.prompt: r for r in all_results if r.method == "ph_entropy"}
 
     n = args.num_prompts
-    print(f"\nPH-TTT beats No-adapt:     {ph_wins_vs_none}/{n} prompts")
-    print(f"PH-TTT beats Entropy-TTT:  {ph_wins_vs_entropy}/{n} prompts")
-    print(f"Entropy-TTT beats No-adapt: {entropy_wins_vs_none}/{n} prompts")
+    used_prompts = prompts[:n]
+
+    def win_count(a, b):
+        return sum(1 for p in used_prompts if a[p].self_consistency > b[p].self_consistency)
+
+    print(f"\nEntropy-TTT beats No-adapt:  {win_count(entropy_results, none_results)}/{n}")
+    print(f"PH-TTT beats No-adapt:       {win_count(ph_results, none_results)}/{n}")
+    print(f"PH->Entropy beats No-adapt:  {win_count(phe_results, none_results)}/{n}")
+    print(f"PH->Entropy beats Entropy:   {win_count(phe_results, entropy_results)}/{n}")
+    print(f"PH->Entropy beats PH-TTT:    {win_count(phe_results, ph_results)}/{n}")
 
     # Save
     output_path = Path(args.output)
