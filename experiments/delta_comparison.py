@@ -153,6 +153,14 @@ def run_delta_method(
     mean_kl = sum(m.kl_divergence for m in metrics if m.attempts > 0) / max(n_attempted, 1)
     mean_rho = sum(m.rho for m in metrics if m.attempts > 0) / max(n_attempted, 1)
 
+    # Per-state diagnostics (from feedback)
+    drift_attempted = [m for m in metrics if m.topology_state == "drifting" and m.attempts > 0]
+    drift_accepted = sum(1 for m in drift_attempted if m.accepted)
+    drift_topo_improved = sum(1 for m in drift_attempted if m.topo_improved)
+    collapse_attempted = [m for m in metrics if m.topology_state == "collapsing" and m.attempts > 0]
+    collapse_accepted = sum(1 for m in collapse_attempted if m.accepted)
+    collapse_topo_improved = sum(1 for m in collapse_attempted if m.topo_improved)
+
     return {
         "text": generated_text,
         "time": elapsed,
@@ -164,6 +172,13 @@ def run_delta_method(
         "n_collapsing": n_collapsing,
         "mean_kl": mean_kl,
         "mean_rho": mean_rho,
+        # Per-state breakdown
+        "drift_attempted": len(drift_attempted),
+        "drift_accepted": drift_accepted,
+        "drift_topo_improved": drift_topo_improved,
+        "collapse_attempted": len(collapse_attempted),
+        "collapse_accepted": collapse_accepted,
+        "collapse_topo_improved": collapse_topo_improved,
         "metrics": [asdict(m) for m in metrics],
     }
 
@@ -343,6 +358,21 @@ def main():
         if mean_kls:
             print(f"    mean KL: {sum(mean_kls)/len(mean_kls):.6f}  "
                   f"mean rho: {sum(mean_rhos)/len(mean_rhos):.4f}")
+
+        # Per-state diagnostics (from feedback: acceptance rate conditional on state)
+        drift_att = sum(r[mode]["drift_attempted"] for r in all_results)
+        drift_acc = sum(r[mode]["drift_accepted"] for r in all_results)
+        drift_imp = sum(r[mode]["drift_topo_improved"] for r in all_results)
+        collapse_att = sum(r[mode]["collapse_attempted"] for r in all_results)
+        collapse_acc = sum(r[mode]["collapse_accepted"] for r in all_results)
+        collapse_imp = sum(r[mode]["collapse_topo_improved"] for r in all_results)
+
+        if drift_att > 0:
+            print(f"    DRIFTING:   {drift_acc}/{drift_att} accepted ({100*drift_acc/drift_att:.0f}%), "
+                  f"topo improved: {drift_imp}/{drift_att} ({100*drift_imp/drift_att:.0f}%)")
+        if collapse_att > 0:
+            print(f"    COLLAPSING: {collapse_acc}/{collapse_att} accepted ({100*collapse_acc/collapse_att:.0f}%), "
+                  f"topo improved: {collapse_imp}/{collapse_att} ({100*collapse_imp/collapse_att:.0f}%)")
 
     # Save results
     output_path = Path(args.output)

@@ -53,6 +53,11 @@ class DeltaConfig:
     max_attempts_drifting: int = 1  # Max update attempts when DRIFTING
     max_attempts_collapsing: int = 2  # Max update attempts when COLLAPSING
 
+    # State-dependent gate thresholds (COLLAPSING is more permissive)
+    state_dependent_gate: bool = True
+    epsilon_kl_collapsing: float = 5e-3  # Looser KL for COLLAPSING
+    tau_rho_collapsing: float = 0.0  # Lower rho bar for COLLAPSING (accept more)
+
     # Optimization mode: "ph", "entropy", or "hybrid"
     #   ph      — optimize PH loss (original LiveLoRA)
     #   entropy — optimize entropy loss when topology triggers (PH→Entropy)
@@ -89,6 +94,7 @@ class ChunkMetrics:
     eff_rank: float = 0.0
     cos_conc: float = 0.0
     divergence: float = 0.0
+    topo_improved: bool = False  # Did topology divergence decrease after update?
 
 
 class GenerationController:
@@ -338,6 +344,9 @@ class GenerationController:
             d_struct = float(struct_before.item()) - float(struct_after.item())
             d_sem = max(kl, 0.0)
 
+            # Topology divergence change
+            d_topo_div = div_before - div_after  # positive = divergence decreased = good
+
             # Gate logic: depends on optimization mode
             if cfg.optimization_mode == "ph":
                 # Original: rho = structural improvement / semantic cost
@@ -346,15 +355,21 @@ class GenerationController:
             else:
                 # Entropy/hybrid: accept if topology divergence improved OR structural loss improved
                 # Entropy optimization improves output quality even when divergence doesn't drop
-                d_topo_div = div_before - div_after  # positive = divergence decreased
                 rho = d_topo_div / (d_sem + cfg.beta) if d_topo_div > 0 else d_struct / (d_sem + cfg.beta)
                 gate_improvement = d_topo_div > 0 or d_struct > 0
 
-        # (3) Accept / reject with reason tracking
-        if kl > cfg.epsilon_kl:
+        # (3) Accept / reject with state-dependent thresholds
+        if cfg.state_dependent_gate and topo_state == TopologyState.COLLAPSING:
+            effective_kl = cfg.epsilon_kl_collapsing
+            effective_tau = cfg.tau_rho_collapsing
+        else:
+            effective_kl = cfg.epsilon_kl
+            effective_tau = cfg.tau_rho
+
+        if kl > effective_kl:
             accept = False
             reason = "rejected_kl"
-        elif rho < cfg.tau_rho:
+        elif rho < effective_tau:
             accept = False
             reason = "rejected_rho"
         elif not gate_improvement:
@@ -390,6 +405,7 @@ class GenerationController:
             eff_rank=latest.eff_rank if latest else 0.0,
             cos_conc=latest.cos_conc if latest else 0.0,
             divergence=self.tracker.divergence_from_baseline(),
+            topo_improved=d_topo_div > 0,
         )
 
     def generate(
