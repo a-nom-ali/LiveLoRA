@@ -106,8 +106,18 @@ Organized into phases, each answering a specific research question before moving
 
 Performance peaks at ~20% acceptance and drops at both extremes. This matches **MCMC acceptance rate theory** — the system behaves as a stochastic search in parameter space constrained by topology. The optimal regime (tau_rho 5-50) naturally produces 20-43% acceptance.
 
+### GSM8K ground truth (n=20, Qwen3.5-0.8B)
+
+| Method | Accuracy | Consistency |
+|--------|----------|-------------|
+| Baseline | 5% (1/20) | 0.278 |
+| Entropy + PH-gate | 5% (1/20) | 0.955 |
+| Entropy + topo-gate | 5% (1/20) | 1.000 |
+
+**Identical accuracy, dramatically different consistency.** The 0.8B model is below the capability threshold for GSM8K — adaptation stabilizes outputs but can't improve correctness on tasks the model fundamentally can't solve. PH gating makes the model *consistently wrong* rather than *randomly wrong*.
+
 ### In progress
-- [ ] **Ground truth benchmark** (GSM8K/ARC) — test correctness, not just consistency
+- [ ] **GSM8K on Qwen3.5-7B** — test correctness at a scale where the model can sometimes solve the task
 - [ ] Integrate ScaleNet into gen_controller
 - [ ] Track first_collapse_chunk vs error_chunk timing
 

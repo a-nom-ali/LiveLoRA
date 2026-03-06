@@ -55,6 +55,16 @@ Performance peaks at ~20% acceptance (tau_rho=50) and drops at both extremes —
 | Entropy-TTT | 0.242 | 10/20 |
 | Baseline | 0.230 | — |
 
+### GSM8K ground truth (Qwen3.5-0.8B, n=20)
+
+| Method | Accuracy | Consistency |
+|--------|----------|-------------|
+| Baseline | 5% (1/20) | 0.278 |
+| Entropy + PH-gate | 5% (1/20) | **0.955** |
+| Entropy + topo-gate | 5% (1/20) | **1.000** |
+
+Identical accuracy, dramatically different consistency. The 0.8B model is below the capability threshold for GSM8K — PH gating stabilizes outputs but can't fix reasoning the model lacks. Testing on 7B+ models next to see if gating also improves *correctness* when the model has sufficient base capability.
+
 ### Topology-quality correlation
 
 Spearman ρ = -0.39 between topology divergence and self-consistency — moderate correlation supports the thesis that activation topology predicts output quality.
