@@ -58,10 +58,12 @@ class DeltaConfig:
     epsilon_kl_collapsing: float = 5e-3  # Looser KL for COLLAPSING
     tau_rho_collapsing: float = 0.0  # Lower rho bar for COLLAPSING (accept more)
 
-    # Optimization mode: "ph", "entropy", or "hybrid"
-    #   ph      — optimize PH loss (original LiveLoRA)
-    #   entropy — optimize entropy loss when topology triggers (PH→Entropy)
-    #   hybrid  — optimize alpha*entropy + beta*topo + drift (best in Phase 1)
+    # Optimization mode:
+    #   ph             — optimize PH loss, gate on structural improvement (original LiveLoRA)
+    #   entropy        — optimize entropy loss, gate on topo divergence improvement
+    #   hybrid         — optimize alpha*entropy + beta*topo, gate on topo divergence
+    #   entropy_ph_gate — optimize entropy loss, gate on PH structural improvement
+    #   random         — random LoRA perturbation, gate on PH structural improvement
     optimization_mode: str = "hybrid"
     alpha_entropy: float = 1.0  # Weight for entropy term (hybrid/entropy modes)
     beta_topo: float = 0.01  # Weight for PH term (hybrid mode only)
@@ -270,6 +272,24 @@ class GenerationController:
                 + cfg.lambda_drift * drift
             )
 
+        elif mode == "entropy_ph_gate":
+            # Entropy gradient, but _try_update uses PH structural gate
+            outputs = self.model(
+                input_ids=input_ids,
+                attention_mask=attention_mask,
+            )
+            logits = outputs.logits
+            k = min(cfg.entropy_probe_len, logits.shape[1])
+            tail_logits = logits[:, -k:, :]
+            ent_loss = self.entropy_loss(tail_logits)
+            drift = self.model.lora_l2_from_checkpoint()
+            return cfg.alpha_entropy * ent_loss + cfg.lambda_drift * drift
+
+        elif mode == "random":
+            # No real loss — just return a dummy. The actual perturbation
+            # happens in _try_update which applies random noise to LoRA params.
+            return None
+
         else:
             raise ValueError(f"Unknown optimization_mode: {mode!r}")
 
@@ -315,10 +335,18 @@ class GenerationController:
 
         opt_loss = self._compute_optimization_loss(input_ids, attention_mask)
 
-        self._optimizer.zero_grad()
-        opt_loss.backward()
-        torch.nn.utils.clip_grad_norm_(self.model.lora_parameters(), cfg.grad_clip)
-        self._optimizer.step()
+        if opt_loss is not None:
+            # Gradient-based update
+            self._optimizer.zero_grad()
+            opt_loss.backward()
+            torch.nn.utils.clip_grad_norm_(self.model.lora_parameters(), cfg.grad_clip)
+            self._optimizer.step()
+        else:
+            # Random perturbation (for "random" mode ablation)
+            with torch.no_grad():
+                for param in self.model.lora_parameters():
+                    noise = torch.randn_like(param) * cfg.lr
+                    param.add_(noise)
 
         # (2) Evaluate candidate
         self.model.eval()
@@ -348,13 +376,12 @@ class GenerationController:
             d_topo_div = div_before - div_after  # positive = divergence decreased = good
 
             # Gate logic: depends on optimization mode
-            if cfg.optimization_mode == "ph":
-                # Original: rho = structural improvement / semantic cost
+            if cfg.optimization_mode in ("ph", "entropy_ph_gate", "random"):
+                # PH structural gate: accept if structural loss improves
                 rho = d_struct / (d_sem + cfg.beta)
                 gate_improvement = d_struct > 0
             else:
                 # Entropy/hybrid: accept if topology divergence improved OR structural loss improved
-                # Entropy optimization improves output quality even when divergence doesn't drop
                 rho = d_topo_div / (d_sem + cfg.beta) if d_topo_div > 0 else d_struct / (d_sem + cfg.beta)
                 gate_improvement = d_topo_div > 0 or d_struct > 0
 
