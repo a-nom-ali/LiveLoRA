@@ -80,6 +80,8 @@ Two operating modes, built from shared components:
 - **`experiments/three_way_comparison.py`** — Phase 1: no-adapt vs entropy-TTT vs PH-TTT (per-prompt)
 - **`experiments/delta_comparison.py`** — Phase 2: LiveLoRA-Delta chunked generation (PH vs entropy vs hybrid)
 - **`experiments/gate_ablation.py`** — Gate ablation: PH-grad vs entropy-grad vs random, all with PH gate + budget-matched entropy
+- **`experiments/arc_benchmark.py`** — ARC-Challenge/Easy correctness benchmark with CoT prompting. Supports `--quantize 4bit` for larger models
+- **`experiments/gsm8k_benchmark.py`** — GSM8K math correctness benchmark. Supports `--quantize 4bit`
 
 ## Validated Findings
 
@@ -95,3 +97,6 @@ Two operating modes, built from shared components:
 - **LiveLoRA-Delta (Qwen3.5-0.8B, GPU, n=20)**: PH-Delta mean=0.874 beats entropy-Delta 0.815 and hybrid-Delta 0.796. All beat baseline 0.255.
 - **Gate ablation (n=20)**: Entropy+PH-gate=0.897, Random+PH-gate=0.889, PH-grad+PH-gate=0.827, Entropy-budgeted=0.789, Entropy+topo-gate=0.773. **The PH gate is the mechanism — selective rejection matters more than the optimization signal.** Lower acceptance rate → higher consistency.
 - **Gen controller optimization modes**: "ph", "entropy", "hybrid", "entropy_ph_gate" (best), "random". Entropy+PH-gate should be the default going forward.
+- **Correctness benchmarks (GSM8K, ARC-Challenge)**: Gate never triggers (0/0 updates) on short structured QA. LiveLoRA-Delta is a long-generation stabilizer — topology needs 128+ tokens of open-ended generation to drift. Baseline majority-vote (50%) beats gated (20%) on ARC-Challenge because stabilization removes sampling diversity.
+- **4-bit quantization**: bitsandbytes nf4 works with PEFT LoRA (`--quantize 4bit`). 0.8B=1.2GB, 9B~5GB VRAM. Tested on Qwen3.5-0.8B and 9B.
+- **Qwen3.5 models**: default names (e.g. `Qwen/Qwen3.5-0.8B`) are instruct, not base. Base models are separate `-Base` variants. Lineup: 0.8B, 2B, 4B, 9B, 27B.

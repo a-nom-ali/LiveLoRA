@@ -63,7 +63,15 @@ Performance peaks at ~20% acceptance (tau_rho=50) and drops at both extremes —
 | Entropy + PH-gate | 5% (1/20) | **0.955** |
 | Entropy + topo-gate | 5% (1/20) | **1.000** |
 
-Identical accuracy, dramatically different consistency. The 0.8B model is below the capability threshold for GSM8K — PH gating stabilizes outputs but can't fix reasoning the model lacks. Testing on 7B+ models next to see if gating also improves *correctness* when the model has sufficient base capability.
+Identical accuracy, dramatically different consistency. The 0.8B model is below the capability threshold for GSM8K — PH gating stabilizes outputs but can't fix reasoning the model lacks.
+
+### Correctness benchmarks: where LiveLoRA-Delta does and doesn't apply
+
+ARC-Challenge and GSM8K on 0.8B/4B models show **0/0 updates** — the topology tracker never triggers on short structured outputs. The gate was validated on *open-ended generation* where topology drifts over 128+ tokens. On structured QA, models generate confidently and the activation manifold stays STABLE.
+
+Additionally, baseline majority voting (50% on ARC-Challenge) outperforms gated methods (20%) because stabilization removes the sampling diversity that majority voting exploits. **LiveLoRA-Delta is a long-generation stabilizer, not a short-answer accuracy booster.**
+
+Correctness experiments on 9B+ models with a larger GPU are needed to test the regime where the model has both sufficient capability and enough generation length for topology drift to manifest.
 
 ### Topology-quality correlation
 
@@ -144,8 +152,12 @@ python experiments/gate_ablation.py --model Qwen/Qwen3.5-0.8B --device auto
 # Acceptance threshold sweep: validate MCMC interpretation
 python experiments/threshold_sweep.py --model Qwen/Qwen3.5-0.8B --device auto
 
-# Ground truth benchmark: does gating improve correctness?
+# Ground truth benchmarks: does gating improve correctness?
 python experiments/gsm8k_benchmark.py --model Qwen/Qwen3.5-0.8B --device auto
+python experiments/arc_benchmark.py --model Qwen/Qwen3.5-0.8B --device auto
+
+# With 4-bit quantization for larger models (needs bitsandbytes)
+python experiments/arc_benchmark.py --model Qwen/Qwen3.5-9B --quantize 4bit --device auto
 
 ```
 
@@ -178,7 +190,7 @@ See [`LiveLoRA - Brief.md`](LiveLoRA%20-%20Brief.md) for the full research analy
 
 ## Current Status
 
-**Phase 2 validated + gate ablation + threshold sweep complete.** The system behaves like a **Structural Metropolis sampler** — a Monte Carlo search in parameter space constrained by persistent homology. Performance peaks at ~20% acceptance (tau_rho=50), matching MCMC theory. Ground truth benchmark (GSM8K) in progress. See [ROADMAP.md](ROADMAP.md) for details.
+**Phase 2 validated + gate ablation + threshold sweep + correctness benchmarks complete.** The system behaves like a **Structural Metropolis sampler** — a Monte Carlo search in parameter space constrained by persistent homology. Performance peaks at ~20% acceptance (tau_rho=50), matching MCMC theory. Correctness benchmarks (GSM8K, ARC-Challenge) show LiveLoRA-Delta is a **long-generation stabilizer** — the topology gate triggers on open-ended generation but not on short structured QA. Larger model experiments (9B+) require a bigger GPU. See [ROADMAP.md](ROADMAP.md) for details.
 
 ## License
 

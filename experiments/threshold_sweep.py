@@ -140,6 +140,8 @@ def main():
     parser.add_argument("--chunk-size", type=int, default=32)
     parser.add_argument("--n-samples", type=int, default=3)
     parser.add_argument("--device", default="auto")
+    parser.add_argument("--quantize", choices=["none", "4bit", "8bit"], default="none",
+                        help="Load model with bitsandbytes quantization (4bit/8bit)")
     parser.add_argument("--output", default="outputs/threshold_sweep.json")
     args = parser.parse_args()
 
@@ -148,13 +150,29 @@ def main():
         device = "cpu"
     dtype = torch.bfloat16 if device == "cuda" else torch.float32
 
-    print(f"Model: {args.model} | Device: {device} | Prompts: {args.num_prompts}")
+    quant_label = f" | Quantize: {args.quantize}" if args.quantize != "none" else ""
+    print(f"Model: {args.model} | Device: {device} | Prompts: {args.num_prompts}{quant_label}")
 
     tokenizer = AutoTokenizer.from_pretrained(args.model)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 
-    base_model = AutoModelForCausalLM.from_pretrained(args.model, dtype=dtype).to(device).eval()
+    if args.quantize != "none":
+        from transformers import BitsAndBytesConfig
+        bnb_config = BitsAndBytesConfig(
+            load_in_4bit=(args.quantize == "4bit"),
+            load_in_8bit=(args.quantize == "8bit"),
+            bnb_4bit_compute_dtype=torch.bfloat16,
+            bnb_4bit_quant_type="nf4",
+        )
+        base_model = AutoModelForCausalLM.from_pretrained(
+            args.model, quantization_config=bnb_config, device_map="auto",
+        ).eval()
+        from peft import prepare_model_for_kbit_training
+        base_model = prepare_model_for_kbit_training(base_model)
+        device = next(base_model.parameters()).device
+    else:
+        base_model = AutoModelForCausalLM.from_pretrained(args.model, dtype=dtype).to(device).eval()
     lora_model = create_lora_model(base_model)
 
     prompts = PROMPTS[:args.num_prompts]

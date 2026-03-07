@@ -116,8 +116,41 @@ Performance peaks at ~20% acceptance and drops at both extremes. This matches **
 
 **Identical accuracy, dramatically different consistency.** The 0.8B model is below the capability threshold for GSM8K — adaptation stabilizes outputs but can't improve correctness on tasks the model fundamentally can't solve. PH gating makes the model *consistently wrong* rather than *randomly wrong*.
 
-### In progress
-- [ ] **GSM8K on larger model (Qwen3.5-4B+)** — test correctness at a scale where the model can sometimes solve the task. Requires disk space (C: drive is full) or cloud GPU.
+### GSM8K ground truth (n=20, Qwen3.5-4B)
+
+| Method | Accuracy | Consistency | Updates |
+|--------|----------|-------------|---------|
+| Baseline | 0% (0/20) | 0.356 | — |
+| Entropy + PH-gate | 0% (0/20) | 1.000 | 0/0 |
+| Entropy + topo-gate | 0% (0/20) | 1.000 | 0/0 |
+
+**4B also below capability threshold.** 0% greedy accuracy (worse than 0.8B). The gate never triggered (0/0 updates) — topology stayed STABLE throughout, so gated methods produced deterministic output with perfect trivial consistency. The 4B model cannot solve GSM8K problems.
+
+### ARC-Challenge (n=20, Qwen3.5-0.8B)
+
+| Method | Greedy Acc | Majority Acc | Answer Agreement |
+|--------|-----------|-------------|-----------------|
+| Baseline | 20% (4/20) | **50% (10/20)** | 0.183 |
+| Entropy + PH-gate | 20% (4/20) | 20% (4/20) | 0.700 |
+| Entropy + topo-gate | 20% (4/20) | 20% (4/20) | 0.700 |
+
+**Stabilization vs diversity tradeoff.** Baseline benefits from majority voting over stochastic samples (50% vs 20% greedy). Gated methods lock in deterministic answers, losing the diversity benefit. Gate never triggered (0/0 updates) — topology stays STABLE on short structured outputs.
+
+### Key correctness benchmark findings
+
+1. **The gate never triggers on short/structured tasks.** The topology tracker classifies state as STABLE throughout ARC and GSM8K generation. LiveLoRA-Delta was validated on open-ended generation where topology drifts over 128+ tokens. On structured QA, the model generates confidently and the activation manifold doesn't degrade enough to cross the divergence drift threshold.
+
+2. **LiveLoRA-Delta is a long-generation method.** The observe-topology → detect-drift → propose-update → accept/reject mechanism needs enough generation length for topology to meaningfully shift. Short-answer tasks don't enter this regime.
+
+3. **Consistency vs majority-vote is a real tradeoff.** Stabilization hurts when the model benefits from sampling diversity across multiple attempts.
+
+4. **RTX 2060 12GB is too slow for 9B-4bit benchmarks.** Each problem took ~40min across 3 methods. Need a larger GPU (5090/A100) for meaningful 9B+ experiments.
+
+### Blocked — needs larger GPU
+- [ ] **ARC-Challenge / GSM8K on Qwen3.5-9B+** — requires 5090 (32GB) or cloud GPU. 9B-4bit on 2060 is ~10x too slow. bitsandbytes 4-bit support is ready (`--quantize 4bit`).
+- [ ] **Open-ended generation benchmark on 9B+** — the regime where LiveLoRA-Delta actually works (long outputs with topology drift)
+
+### Remaining
 - [ ] Integrate ScaleNet into gen_controller
 - [ ] Track first_collapse_chunk vs error_chunk timing
 
