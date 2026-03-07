@@ -58,6 +58,12 @@ echo "=============================================="
 # Check GPU
 python3 -c "import torch; print(f'CUDA available: {torch.cuda.is_available()}'); print(f'GPU: {torch.cuda.get_device_name(0) if torch.cuda.is_available() else \"none\"}'); print(f'VRAM: {torch.cuda.get_device_properties(0).total_mem/1024**3:.1f}GB' if torch.cuda.is_available() else '')" 2>/dev/null || echo "Warning: could not detect GPU"
 
+# Note: Models are downloaded automatically from HuggingFace on first run.
+# Qwen3.5 models are open-access (no token needed).
+# Download sizes: 9B ~18GB, 27B ~54GB (4-bit loads are smaller in VRAM but full download).
+# To change download location: export HF_HOME=/path/to/big/drive/huggingface_cache
+echo "HF cache: ${HF_HOME:-~/.cache/huggingface}"
+
 # Install if needed
 if [ "$SKIP_INSTALL" = false ]; then
     echo ""
