@@ -1,0 +1,1062 @@
+[
+  {
+    "id": "Mercury_7175875",
+    "question": "An astronomer observes that a planet rotates faster after a meteorite impact. Which is the most likely effect of this increase in rotation?",
+    "gold_answer": "C",
+    "baseline": {
+      "correct": false,
+      "majority_correct": true,
+      "extracted_answer": null,
+      "all_answers": [
+        null,
+        "C",
+        "A"
+      ],
+      "agreement": 0.0,
+      "consistency": 0.21540494458653028,
+      "n_accepted": 0,
+      "n_attempted": 0,
+      "time": 150.00327620003372,
+      "text_sample": "\n1. Planetary rotation is a function of the planet's mass and radius.\n2. The increase in rotation speed implies a change in the planet's mass or radius.\n3. Planetary density is defined as mass divided"
+    },
+    "entropy_ph_gate": {
+      "correct": false,
+      "majority_correct": false,
+      "extracted_answer": "A",
+      "all_answers": [
+        "A",
+        "A",
+        "A"
+      ],
+      "agreement": 1.0,
+      "consistency": 1.0,
+      "n_accepted": 0,
+      "n_attempted": 0,
+      "time": 177.94646600005217,
+      "text_sample": "\n1. Planetary rotation is a function of the planet's mass and radius.\n2. The increase in rotation speed implies a change in the planet's moment of inertia.\n3. The moment of inertia is defined as $I = "
+    },
+    "entropy": {
+      "correct": false,
+      "majority_correct": false,
+      "extracted_answer": "A",
+      "all_answers": [
+        "A",
+        "A",
+        "A"
+      ],
+      "agreement": 1.0,
+      "consistency": 1.0,
+      "n_accepted": 0,
+      "n_attempted": 0,
+      "time": 194.55583620001562,
+      "text_sample": "\n1. Planetary rotation is a function of the planet's mass and radius.\n2. The increase in rotation speed implies a change in the planet's moment of inertia.\n3. The moment of inertia is defined as $I = "
+    }
+  },
+  {
+    "id": "Mercury_SC_409171",
+    "question": "A group of engineers wanted to know how different building designs would respond during an earthquake. They made several models of buildings and tested each for its ability to withstand earthquake conditions. Which will most likely result from testing different building designs?",
+    "gold_answer": "B",
+    "baseline": {
+      "correct": false,
+      "majority_correct": true,
+      "extracted_answer": null,
+      "all_answers": [
+        null,
+        "B",
+        "B"
+      ],
+      "agreement": 0.3333333333333333,
+      "consistency": 0.2527979228220969,
+      "n_accepted": 0,
+      "n_attempted": 0,
+      "time": 118.0934354000492,
+      "text_sample": "\n1. The question asks about the outcome of testing different building designs.\n2. Testing involves comparing the performance of different models.\n3. The goal of testing is to determine which design pe"
+    },
+    "entropy_ph_gate": {
+      "correct": false,
+      "majority_correct": false,
+      "extracted_answer": "A",
+      "all_answers": [
+        "A",
+        "A",
+        "A"
+      ],
+      "agreement": 1.0,
+      "consistency": 1.0,
+      "n_accepted": 0,
+      "n_attempted": 0,
+      "time": 212.31034189998172,
+      "text_sample": "\n1. The question asks about the outcome of testing different building designs.\n2. Testing involves comparing the performance of different models.\n3. The goal of testing is to determine which design pe"
+    },
+    "entropy": {
+      "correct": false,
+      "majority_correct": false,
+      "extracted_answer": "A",
+      "all_answers": [
+        "A",
+        "A",
+        "A"
+      ],
+      "agreement": 1.0,
+      "consistency": 1.0,
+      "n_accepted": 0,
+      "n_attempted": 0,
+      "time": 196.41086199996062,
+      "text_sample": "\n1. The question asks about the outcome of testing different building designs.\n2. Testing involves comparing the performance of different models.\n3. The goal of testing is to determine which design pe"
+    }
+  },
+  {
+    "id": "Mercury_SC_408547",
+    "question": "The end result in the process of photosynthesis is the production of sugar and oxygen. Which step signals the beginning of photosynthesis?",
+    "gold_answer": "C",
+    "baseline": {
+      "correct": true,
+      "majority_correct": true,
+      "extracted_answer": "C",
+      "all_answers": [
+        "C",
+        "C",
+        null
+      ],
+      "agreement": 0.3333333333333333,
+      "consistency": 0.2120686179648444,
+      "n_accepted": 0,
+      "n_attempted": 0,
+      "time": 111.18553900008556,
+      "text_sample": "\n1. Photosynthesis is the process by which plants convert light energy into chemical energy.\n2. The process begins with the absorption of light energy by chlorophyll.\n3. This energy is then used to co"
+    },
+    "entropy_ph_gate": {
+      "correct": true,
+      "majority_correct": true,
+      "extracted_answer": "C",
+      "all_answers": [
+        "C",
+        "C",
+        "C"
+      ],
+      "agreement": 1.0,
+      "consistency": 1.0,
+      "n_accepted": 0,
+      "n_attempted": 0,
+      "time": 181.45973670005333,
+      "text_sample": "\n1. Photosynthesis is the process by which plants convert light energy into chemical energy.\n2. The process begins with the absorption of light energy by chlorophyll.\n3. This energy is then used to co"
+    },
+    "entropy": {
+      "correct": true,
+      "majority_correct": true,
+      "extracted_answer": "C",
+      "all_answers": [
+        "C",
+        "C",
+        "C"
+      ],
+      "agreement": 1.0,
+      "consistency": 1.0,
+      "n_accepted": 0,
+      "n_attempted": 0,
+      "time": 186.05763990001287,
+      "text_sample": "\n1. Photosynthesis is the process by which plants convert light energy into chemical energy.\n2. The process begins with the absorption of light energy by chlorophyll.\n3. This energy is then used to co"
+    }
+  },
+  {
+    "id": "Mercury_407327",
+    "question": "A physicist wants to determine the speed a car must reach to jump over a ramp. The physicist conducts three trials. In trials two and three, the speed of the car is increased by 20 miles per hour. What is the physicist investigating when he changes the speed?",
+    "gold_answer": "D",
+    "baseline": {
+      "correct": false,
+      "majority_correct": true,
+      "extracted_answer": null,
+      "all_answers": [
+        null,
+        "D",
+        null
+      ],
+      "agreement": 0.0,
+      "consistency": 0.293823281254546,
+      "n_accepted": 0,
+      "n_attempted": 0,
+      "time": 125.70162149996031,
+      "text_sample": "\n1. The physicist wants to determine the speed a car must reach to jump over a ramp.\n2. The speed of the car is the dependent (responding) variable.\n3. The speed of the car is the independent (manipul"
+    },
+    "entropy_ph_gate": {
+      "correct": false,
+      "majority_correct": false,
+      "extracted_answer": null,
+      "all_answers": [
+        null,
+        null,
+        null
+      ],
+      "agreement": 0.0,
+      "consistency": 1.0,
+      "n_accepted": 0,
+      "n_attempted": 0,
+      "time": 63.457533700042404,
+      "text_sample": "\n1. The physicist wants to determine the speed a car must reach to jump over a ramp.\n2. The speed of the car is the dependent (responding) variable.\n3. The speed of the car is the independent (manipul"
+    },
+    "entropy": {
+      "correct": false,
+      "majority_correct": false,
+      "extracted_answer": null,
+      "all_answers": [
+        null,
+        null,
+        null
+      ],
+      "agreement": 0.0,
+      "consistency": 1.0,
+      "n_accepted": 0,
+      "n_attempted": 0,
+      "time": 62.39266499993391,
+      "text_sample": "\n1. The physicist wants to determine the speed a car must reach to jump over a ramp.\n2. The speed of the car is the dependent (responding) variable.\n3. The speed of the car is the independent (manipul"
+    }
+  },
+  {
+    "id": "MCAS_2006_9_44",
+    "question": "An astronaut drops a 1.0 kg object and a 5.0 kg object on the Moon. Both objects fall a total distance of 2.0 m vertically. Which of the following best describes the objects after they have fallen a distance of 1.0 m?",
+    "gold_answer": "D",
+    "baseline": {
+      "correct": false,
+      "majority_correct": false,
+      "extracted_answer": null,
+      "all_answers": [
+        null,
+        null,
+        null
+      ],
+      "agreement": 0.0,
+      "consistency": 0.11821308772528287,
+      "n_accepted": 0,
+      "n_attempted": 0,
+      "time": 50.7176741999574,
+      "text_sample": "\n1. 1.0 kg object:\n   - Initial state: $v_i = 0$, $m_1 = 1.0$ kg, $h_1 = 0$.\n   - Final state: $h_1 = 1.0$ m.\n   - Kinetic energy: $K_1 = 0.5 \\times 1.0 \\times v^2$.\n   - Potential energy: $U_1 = m_1 "
+    },
+    "entropy_ph_gate": {
+      "correct": false,
+      "majority_correct": false,
+      "extracted_answer": null,
+      "all_answers": [
+        null,
+        null,
+        null
+      ],
+      "agreement": 0.0,
+      "consistency": 1.0,
+      "n_accepted": 0,
+      "n_attempted": 0,
+      "time": 66.691725499928,
+      "text_sample": "\n1. 1.0 kg object:\n   - Initial state: $v_i = 0$, $m_1 = 1.0$ kg, $h_1 = 0$.\n   - Final state: $v_f = 0$, $m_1 = 1.0$ kg, $h_1 = 1.0$ m.\n   - Change in potential energy: $\\Delta U_1 = m_1 g h_1 = 1.0 "
+    },
+    "entropy": {
+      "correct": false,
+      "majority_correct": false,
+      "extracted_answer": null,
+      "all_answers": [
+        null,
+        null,
+        null
+      ],
+      "agreement": 0.0,
+      "consistency": 1.0,
+      "n_accepted": 0,
+      "n_attempted": 0,
+      "time": 65.73034109990112,
+      "text_sample": "\n1. 1.0 kg object:\n   - Initial state: $v_i = 0$, $m_1 = 1.0$ kg, $h_1 = 0$.\n   - Final state: $v_f = 0$, $m_1 = 1.0$ kg, $h_1 = 1.0$ m.\n   - Change in potential energy: $\\Delta U_1 = m_1 g h_1 = 1.0 "
+    }
+  },
+  {
+    "id": "Mercury_7270393",
+    "question": "Devil facial tumor disease (DFTD) is a disease that is decimating the population of Tasmanian devils. The disease passes from one animal to another through bites and is caused by parasites. The parasites cause cancerous tumors that spread throughout an infected animal's body and kill it. What is the best description of DFTD?",
+    "gold_answer": "B",
+    "baseline": {
+      "correct": false,
+      "majority_correct": false,
+      "extracted_answer": null,
+      "all_answers": [
+        null,
+        null,
+        null
+      ],
+      "agreement": 0.0,
+      "consistency": 0.26220864280332196,
+      "n_accepted": 0,
+      "n_attempted": 0,
+      "time": 48.24636699992698,
+      "text_sample": "\n1. The disease is decimating the population of Tasmanian devils, indicating a significant impact on the population.\n2. The disease passes from one animal to another through bites, indicating it is in"
+    },
+    "entropy_ph_gate": {
+      "correct": false,
+      "majority_correct": false,
+      "extracted_answer": "D",
+      "all_answers": [
+        "D",
+        "D",
+        "D"
+      ],
+      "agreement": 1.0,
+      "consistency": 1.0,
+      "n_accepted": 0,
+      "n_attempted": 0,
+      "time": 66.35078689991497,
+      "text_sample": "\n1. The disease is decimating the population of Tasmanian devils, indicating a significant impact on the population.\n2. The disease passes from one animal to another through bites, indicating it is in"
+    },
+    "entropy": {
+      "correct": false,
+      "majority_correct": false,
+      "extracted_answer": "D",
+      "all_answers": [
+        "D",
+        "D",
+        "D"
+      ],
+      "agreement": 1.0,
+      "consistency": 1.0,
+      "n_accepted": 0,
+      "n_attempted": 0,
+      "time": 253.67916780000087,
+      "text_sample": "\n1. The disease is decimating the population of Tasmanian devils, indicating a significant impact on the population.\n2. The disease passes from one animal to another through bites, indicating it is in"
+    }
+  },
+  {
+    "id": "MCAS_2014_5_7",
+    "question": "A type of small mammal from the mountain regions of the western United States makes its home out of piles of rock. During summer months, the mammal places grasses and seeds in protected places in the rock piles. Which of the following is the most likely reason for this behavior?",
+    "gold_answer": "C",
+    "baseline": {
+      "correct": false,
+      "majority_correct": false,
+      "extracted_answer": "A",
+      "all_answers": [
+        "A",
+        null,
+        "D"
+      ],
+      "agreement": 0.0,
+      "consistency": 0.21978210433218923,
+      "n_accepted": 0,
+      "n_attempted": 0,
+      "time": 157.02891360002104,
+      "text_sample": "\n1. The question describes a small mammal living in rock piles in the western United States during summer.\n2. The mammal places grasses and seeds in the rock piles during summer.\n3. The question asks "
+    },
+    "entropy_ph_gate": {
+      "correct": false,
+      "majority_correct": false,
+      "extracted_answer": "A",
+      "all_answers": [
+        "A",
+        "A",
+        "A"
+      ],
+      "agreement": 1.0,
+      "consistency": 1.0,
+      "n_accepted": 0,
+      "n_attempted": 0,
+      "time": 195.81557989993598,
+      "text_sample": "\n1. The question describes a small mammal living in rock piles in the western United States during summer.\n2. The mammal places grasses and seeds in the rock piles during summer.\n3. The question asks "
+    },
+    "entropy": {
+      "correct": false,
+      "majority_correct": false,
+      "extracted_answer": "A",
+      "all_answers": [
+        "A",
+        "A",
+        "A"
+      ],
+      "agreement": 1.0,
+      "consistency": 1.0,
+      "n_accepted": 0,
+      "n_attempted": 0,
+      "time": 181.50138279993553,
+      "text_sample": "\n1. The question describes a small mammal living in rock piles in the western United States during summer.\n2. The mammal places grasses and seeds in the rock piles during summer.\n3. The question asks "
+    }
+  },
+  {
+    "id": "Mercury_7086660",
+    "question": "Petrified palm trees are found in sedimentary rock near glaciers. The presence of the petrified palm trees most likely provides evidence for which statement?",
+    "gold_answer": "C",
+    "baseline": {
+      "correct": false,
+      "majority_correct": false,
+      "extracted_answer": "B",
+      "all_answers": [
+        "B",
+        "A",
+        "A"
+      ],
+      "agreement": 0.3333333333333333,
+      "consistency": 0.3077608482580415,
+      "n_accepted": 0,
+      "n_attempted": 0,
+      "time": 137.80987839994486,
+      "text_sample": "\n1. Petrified palm trees are formed from the remains of plants that were once alive.\n2. The presence of these trees in sedimentary rock near glaciers indicates that the area was once grassland.\n3. Gra"
+    },
+    "entropy_ph_gate": {
+      "correct": false,
+      "majority_correct": false,
+      "extracted_answer": "B",
+      "all_answers": [
+        "B",
+        "B",
+        "B"
+      ],
+      "agreement": 1.0,
+      "consistency": 1.0,
+      "n_accepted": 0,
+      "n_attempted": 0,
+      "time": 201.8314764999086,
+      "text_sample": "\n1. Petrified palm trees are formed from the remains of plants that were once alive.\n2. The presence of these trees in sedimentary rock near glaciers indicates that the area was once grassland.\n3. Gra"
+    },
+    "entropy": {
+      "correct": false,
+      "majority_correct": false,
+      "extracted_answer": "B",
+      "all_answers": [
+        "B",
+        "B",
+        "B"
+      ],
+      "agreement": 1.0,
+      "consistency": 1.0,
+      "n_accepted": 0,
+      "n_attempted": 0,
+      "time": 190.98515650001355,
+      "text_sample": "\n1. Petrified palm trees are formed from the remains of plants that were once alive.\n2. The presence of these trees in sedimentary rock near glaciers indicates that the area was once grassland.\n3. Gra"
+    }
+  },
+  {
+    "id": "Mercury_7168805",
+    "question": "Farmers in Wyoming were concerned because some of their chickens were being preyed upon by hawks that lived in areas around their ranches. The farmers grouped together and hunted the hawks until they were no longer in their area. Which would most likely happen next?",
+    "gold_answer": "B",
+    "baseline": {
+      "correct": false,
+      "majority_correct": false,
+      "extracted_answer": null,
+      "all_answers": [
+        null,
+        null,
+        null
+      ],
+      "agreement": 0.0,
+      "consistency": 0.23857038164496305,
+      "n_accepted": 0,
+      "n_attempted": 0,
+      "time": 152.06998330005445,
+      "text_sample": "\n1. The farmers' actions (hunting hawks) directly reduced the hawk population.\n2. Hawks are apex predators that control the population of smaller animals like mice and rats.\n3. By removing the hawk po"
+    },
+    "entropy_ph_gate": {
+      "correct": false,
+      "majority_correct": false,
+      "extracted_answer": null,
+      "all_answers": [
+        null,
+        null,
+        null
+      ],
+      "agreement": 0.0,
+      "consistency": 1.0,
+      "n_accepted": 0,
+      "n_attempted": 0,
+      "time": 189.07159830001183,
+      "text_sample": "\n1. The farmers' actions (hunting hawks) directly reduced the hawk population.\n2. Hawks are apex predators that control the population of smaller animals like mice and rats.\n3. By removing the hawk po"
+    },
+    "entropy": {
+      "correct": false,
+      "majority_correct": false,
+      "extracted_answer": null,
+      "all_answers": [
+        null,
+        null,
+        null
+      ],
+      "agreement": 0.0,
+      "consistency": 1.0,
+      "n_accepted": 0,
+      "n_attempted": 0,
+      "time": 115.06325080001261,
+      "text_sample": "\n1. The farmers' actions (hunting hawks) directly reduced the hawk population.\n2. Hawks are apex predators that control the population of smaller animals like mice and rats.\n3. By removing the hawk po"
+    }
+  },
+  {
+    "id": "MCAS_2003_8_11",
+    "question": "Copper is an element that is used in electrical wires. What is the smallest unit of copper that still maintains the characteristics of copper?",
+    "gold_answer": "A",
+    "baseline": {
+      "correct": false,
+      "majority_correct": false,
+      "extracted_answer": "B",
+      "all_answers": [
+        "B",
+        "A",
+        "B"
+      ],
+      "agreement": 0.3333333333333333,
+      "consistency": 0.3191181284782554,
+      "n_accepted": 0,
+      "n_attempted": 0,
+      "time": 44.712368099950254,
+      "text_sample": "\n1. Copper is an element.\n2. Elements are made up of atoms.\n3. Atoms are made up of subatomic particles.\n4. The nucleus contains protons and neutrons.\n5. The electron cloud surrounds the nucleus.\n6. T"
+    },
+    "entropy_ph_gate": {
+      "correct": false,
+      "majority_correct": false,
+      "extracted_answer": "B",
+      "all_answers": [
+        "B",
+        "B",
+        "B"
+      ],
+      "agreement": 1.0,
+      "consistency": 1.0,
+      "n_accepted": 0,
+      "n_attempted": 0,
+      "time": 62.36561510001775,
+      "text_sample": "\n1. Copper is an element.\n2. Elements are made up of atoms.\n3. Atoms are made up of subatomic particles.\n4. The nucleus contains protons and neutrons.\n5. The electron cloud surrounds the nucleus.\n6. T"
+    },
+    "entropy": {
+      "correct": false,
+      "majority_correct": false,
+      "extracted_answer": "B",
+      "all_answers": [
+        "B",
+        "B",
+        "B"
+      ],
+      "agreement": 1.0,
+      "consistency": 1.0,
+      "n_accepted": 0,
+      "n_attempted": 0,
+      "time": 63.46661809994839,
+      "text_sample": "\n1. Copper is an element.\n2. Elements are made up of atoms.\n3. Atoms are made up of subatomic particles.\n4. The nucleus contains protons and neutrons.\n5. The electron cloud surrounds the nucleus.\n6. T"
+    }
+  },
+  {
+    "id": "Mercury_7250058",
+    "question": "According to cell classification, prokaryotic cells are separated from eukaryotic cells. Which feature is often used to distinguish prokaryotic cells from eukaryotic cells?",
+    "gold_answer": "B",
+    "baseline": {
+      "correct": false,
+      "majority_correct": false,
+      "extracted_answer": null,
+      "all_answers": [
+        null,
+        null,
+        "A"
+      ],
+      "agreement": 0.0,
+      "consistency": 0.18132716049382713,
+      "n_accepted": 0,
+      "n_attempted": 0,
+      "time": 50.03057719999924,
+      "text_sample": "\n1. Prokaryotic cells are separated from eukaryotic cells.\n2. Prokaryotic cells are separated from eukaryotic cells.\n3. Prokaryotic cells are separated from eukaryotic cells.\n4. Prokaryotic cells are "
+    },
+    "entropy_ph_gate": {
+      "correct": false,
+      "majority_correct": false,
+      "extracted_answer": null,
+      "all_answers": [
+        null,
+        null,
+        null
+      ],
+      "agreement": 0.0,
+      "consistency": 1.0,
+      "n_accepted": 0,
+      "n_attempted": 0,
+      "time": 63.57088010001462,
+      "text_sample": "\n1. Prokaryotic cells are separated from eukaryotic cells.\n2. Prokaryotic cells are separated from eukaryotic cells.\n3. Prokaryotic cells are separated from eukaryotic cells.\n4. Prokaryotic cells are "
+    },
+    "entropy": {
+      "correct": false,
+      "majority_correct": false,
+      "extracted_answer": null,
+      "all_answers": [
+        null,
+        null,
+        null
+      ],
+      "agreement": 0.0,
+      "consistency": 1.0,
+      "n_accepted": 0,
+      "n_attempted": 0,
+      "time": 61.610347800073214,
+      "text_sample": "\n1. Prokaryotic cells are separated from eukaryotic cells.\n2. Prokaryotic cells are separated from eukaryotic cells.\n3. Prokaryotic cells are separated from eukaryotic cells.\n4. Prokaryotic cells are "
+    }
+  },
+  {
+    "id": "Mercury_7012740",
+    "question": "Which statement best describes the effect of the Sun on the oceans?",
+    "gold_answer": "A",
+    "baseline": {
+      "correct": false,
+      "majority_correct": true,
+      "extracted_answer": null,
+      "all_answers": [
+        null,
+        null,
+        "A"
+      ],
+      "agreement": 0.0,
+      "consistency": 0.2609803391053391,
+      "n_accepted": 0,
+      "n_attempted": 0,
+      "time": 44.61811330006458,
+      "text_sample": "\n1. The Sun is a massive, hot, and dense object.\n2. It emits energy in the form of electromagnetic radiation.\n3. This radiation causes the Sun to heat the Earth's surface.\n4. The heat causes the Earth"
+    },
+    "entropy_ph_gate": {
+      "correct": false,
+      "majority_correct": false,
+      "extracted_answer": null,
+      "all_answers": [
+        null,
+        null,
+        null
+      ],
+      "agreement": 0.0,
+      "consistency": 1.0,
+      "n_accepted": 0,
+      "n_attempted": 0,
+      "time": 62.67778179992456,
+      "text_sample": "\n1. The Sun is a massive, hot, and dense object.\n2. It emits energy in the form of electromagnetic radiation.\n3. This radiation causes the Sun's surface to heat up.\n4. The heat causes the Sun's surfac"
+    },
+    "entropy": {
+      "correct": false,
+      "majority_correct": false,
+      "extracted_answer": null,
+      "all_answers": [
+        null,
+        null,
+        null
+      ],
+      "agreement": 0.0,
+      "consistency": 1.0,
+      "n_accepted": 0,
+      "n_attempted": 0,
+      "time": 60.537528099957854,
+      "text_sample": "\n1. The Sun is a massive, hot, and dense object.\n2. It emits energy in the form of electromagnetic radiation.\n3. This radiation causes the Sun's surface to heat up.\n4. The heat causes the Sun's surfac"
+    }
+  },
+  {
+    "id": "Mercury_LBS10610",
+    "question": "The morning temperature in a city is 41\u00b0F. If a sunny, mild day is forecast, which temperature is most likely for 2:00 p.m.?",
+    "gold_answer": "C",
+    "baseline": {
+      "correct": false,
+      "majority_correct": false,
+      "extracted_answer": "A",
+      "all_answers": [
+        "A",
+        "A",
+        null
+      ],
+      "agreement": 0.3333333333333333,
+      "consistency": 0.21542809042809044,
+      "n_accepted": 0,
+      "n_attempted": 0,
+      "time": 50.645826699910685,
+      "text_sample": "\n1. The morning temperature is 41\u00b0F.\n2. A sunny, mild day is forecast.\n3. The temperature is expected to increase.\n4. The temperature is expected to increase.\n5. The temperature is expected to increas"
+    },
+    "entropy_ph_gate": {
+      "correct": false,
+      "majority_correct": false,
+      "extracted_answer": "A",
+      "all_answers": [
+        "A",
+        "A",
+        "A"
+      ],
+      "agreement": 1.0,
+      "consistency": 1.0,
+      "n_accepted": 0,
+      "n_attempted": 0,
+      "time": 60.249120499938726,
+      "text_sample": "\n1. The morning temperature is 41\u00b0F.\n2. A sunny, mild day is forecast.\n3. The temperature is expected to increase.\n4. The temperature is expected to increase.\n5. The temperature is expected to increas"
+    },
+    "entropy": {
+      "correct": false,
+      "majority_correct": false,
+      "extracted_answer": "A",
+      "all_answers": [
+        "A",
+        "A",
+        "A"
+      ],
+      "agreement": 1.0,
+      "consistency": 1.0,
+      "n_accepted": 0,
+      "n_attempted": 0,
+      "time": 62.59786360000726,
+      "text_sample": "\n1. The morning temperature is 41\u00b0F.\n2. A sunny, mild day is forecast.\n3. The temperature is expected to increase.\n4. The temperature is expected to increase.\n5. The temperature is expected to increas"
+    }
+  },
+  {
+    "id": "Mercury_SC_407400",
+    "question": "A class plans an investigation to see which brand of light bulb lasts the longest. Which of these steps should come first?",
+    "gold_answer": "C",
+    "baseline": {
+      "correct": false,
+      "majority_correct": false,
+      "extracted_answer": null,
+      "all_answers": [
+        null,
+        "D",
+        "A"
+      ],
+      "agreement": 0.0,
+      "consistency": 0.3803134418324292,
+      "n_accepted": 0,
+      "n_attempted": 0,
+      "time": 42.15942979999818,
+      "text_sample": "\n1. The investigation is about determining which brand of light bulb lasts the longest.\n2. To determine which brand lasts the longest, the investigator must first collect data.\n3. Making daily observa"
+    },
+    "entropy_ph_gate": {
+      "correct": false,
+      "majority_correct": false,
+      "extracted_answer": null,
+      "all_answers": [
+        null,
+        null,
+        null
+      ],
+      "agreement": 0.0,
+      "consistency": 1.0,
+      "n_accepted": 0,
+      "n_attempted": 0,
+      "time": 62.9720043000998,
+      "text_sample": "\n1. The investigation is about determining which brand of light bulb lasts the longest.\n2. To determine which brand lasts the longest, the investigator must first collect data.\n3. Making daily observa"
+    },
+    "entropy": {
+      "correct": false,
+      "majority_correct": false,
+      "extracted_answer": null,
+      "all_answers": [
+        null,
+        null,
+        null
+      ],
+      "agreement": 0.0,
+      "consistency": 1.0,
+      "n_accepted": 0,
+      "n_attempted": 0,
+      "time": 63.16692160000093,
+      "text_sample": "\n1. The investigation is about determining which brand of light bulb lasts the longest.\n2. To determine which brand lasts the longest, the investigator must first collect data.\n3. Making daily observa"
+    }
+  },
+  {
+    "id": "Mercury_7212993",
+    "question": "Which of these gases is the most abundant greenhouse gas in the lower atmosphere of Earth?",
+    "gold_answer": "C",
+    "baseline": {
+      "correct": true,
+      "majority_correct": true,
+      "extracted_answer": "C",
+      "all_answers": [
+        "C",
+        "D",
+        "B"
+      ],
+      "agreement": 0.0,
+      "consistency": 0.3803071364046973,
+      "n_accepted": 0,
+      "n_attempted": 0,
+      "time": 42.07235580007546,
+      "text_sample": "\n- Ozone (A) is a greenhouse gas, but it is not the most abundant.\n- Methane (B) is a greenhouse gas, but it is not the most abundant.\n- Water vapor (C) is the most abundant greenhouse gas in the lowe"
+    },
+    "entropy_ph_gate": {
+      "correct": true,
+      "majority_correct": true,
+      "extracted_answer": "C",
+      "all_answers": [
+        "C",
+        "C",
+        "C"
+      ],
+      "agreement": 1.0,
+      "consistency": 1.0,
+      "n_accepted": 0,
+      "n_attempted": 0,
+      "time": 66.0311697999714,
+      "text_sample": "\n- Ozone (A) is a greenhouse gas, but it is not the most abundant.\n- Methane (B) is a greenhouse gas, but it is not the most abundant.\n- Water vapor (C) is the most abundant greenhouse gas in the lowe"
+    },
+    "entropy": {
+      "correct": true,
+      "majority_correct": true,
+      "extracted_answer": "C",
+      "all_answers": [
+        "C",
+        "C",
+        "C"
+      ],
+      "agreement": 1.0,
+      "consistency": 1.0,
+      "n_accepted": 0,
+      "n_attempted": 0,
+      "time": 64.04643540002871,
+      "text_sample": "\n- Ozone (A) is a greenhouse gas, but it is not the most abundant.\n- Methane (B) is a greenhouse gas, but it is not the most abundant.\n- Water vapor (C) is the most abundant greenhouse gas in the lowe"
+    }
+  },
+  {
+    "id": "Mercury_SC_413240",
+    "question": "At which temperature does water freeze?",
+    "gold_answer": "A",
+    "baseline": {
+      "correct": true,
+      "majority_correct": true,
+      "extracted_answer": "A",
+      "all_answers": [
+        "A",
+        "A",
+        "A"
+      ],
+      "agreement": 1.0,
+      "consistency": 0.4604001702852278,
+      "n_accepted": 0,
+      "n_attempted": 0,
+      "time": 26.98529410001356,
+      "text_sample": "\n1. Water freezes at 0 degrees Celsius.\n2. Water freezes at 32 degrees Celsius.\n3. Water freezes at 100 degrees Celsius.\n4. Water freezes at 212 degrees Celsius.\n5. The answer is A.\n\nFinal Answer is A"
+    },
+    "entropy_ph_gate": {
+      "correct": true,
+      "majority_correct": true,
+      "extracted_answer": "A",
+      "all_answers": [
+        "A",
+        "A",
+        "A"
+      ],
+      "agreement": 1.0,
+      "consistency": 1.0,
+      "n_accepted": 0,
+      "n_attempted": 0,
+      "time": 62.9117058000993,
+      "text_sample": "\n1. Water freezes at 0 degrees Celsius.\n2. Water freezes at 32 degrees Celsius.\n3. Water freezes at 100 degrees Celsius.\n4. Water freezes at 212 degrees Celsius.\n5. The answer is A.\n\nFinal Answer: The"
+    },
+    "entropy": {
+      "correct": true,
+      "majority_correct": true,
+      "extracted_answer": "A",
+      "all_answers": [
+        "A",
+        "A",
+        "A"
+      ],
+      "agreement": 1.0,
+      "consistency": 1.0,
+      "n_accepted": 0,
+      "n_attempted": 0,
+      "time": 59.858127799932845,
+      "text_sample": "\n1. Water freezes at 0 degrees Celsius.\n2. Water freezes at 32 degrees Celsius.\n3. Water freezes at 100 degrees Celsius.\n4. Water freezes at 212 degrees Celsius.\n5. The answer is A.\n\nFinal Answer: The"
+    }
+  },
+  {
+    "id": "Mercury_7186358",
+    "question": "Fossil bones and teeth of dinosaurs have been researched for the last century. Recent discoveries of fossilized dinosaurs have also revealed details of soft tissues, such as skin. Which is best for a scientist to do when reporting research on dinosaurs now?",
+    "gold_answer": "C",
+    "baseline": {
+      "correct": true,
+      "majority_correct": true,
+      "extracted_answer": "C",
+      "all_answers": [
+        "C",
+        "A",
+        "D"
+      ],
+      "agreement": 0.0,
+      "consistency": 0.20227860599087744,
+      "n_accepted": 0,
+      "n_attempted": 0,
+      "time": 41.123851599986665,
+      "text_sample": "\n1. The question asks for the best practice for a scientist reporting research on dinosaurs.\n2. The context is that dinosaur fossils have been researched for a long time, and recent discoveries of sof"
+    },
+    "entropy_ph_gate": {
+      "correct": true,
+      "majority_correct": true,
+      "extracted_answer": "C",
+      "all_answers": [
+        "C",
+        "C",
+        "C"
+      ],
+      "agreement": 1.0,
+      "consistency": 1.0,
+      "n_accepted": 0,
+      "n_attempted": 0,
+      "time": 60.422408399987034,
+      "text_sample": "\n1. The question asks for the best practice for a scientist reporting research on dinosaurs.\n2. The context is that dinosaur fossils have been researched for a long time, and recent discoveries of sof"
+    },
+    "entropy": {
+      "correct": true,
+      "majority_correct": true,
+      "extracted_answer": "C",
+      "all_answers": [
+        "C",
+        "C",
+        "C"
+      ],
+      "agreement": 1.0,
+      "consistency": 1.0,
+      "n_accepted": 0,
+      "n_attempted": 0,
+      "time": 62.091761799994856,
+      "text_sample": "\n1. The question asks for the best practice for a scientist reporting research on dinosaurs.\n2. The context is that dinosaur fossils have been researched for a long time, and recent discoveries of sof"
+    }
+  },
+  {
+    "id": "Mercury_7166425",
+    "question": "Molly was making iced tea by putting tea bags in boiling water. She needed to cool the hot tea quickly, so she poured it into a pitcher full of ice. Which best describes the flow of thermal energy?",
+    "gold_answer": "B",
+    "baseline": {
+      "correct": false,
+      "majority_correct": true,
+      "extracted_answer": "A",
+      "all_answers": [
+        "A",
+        "B",
+        "B"
+      ],
+      "agreement": 0.3333333333333333,
+      "consistency": 0.3593542260208927,
+      "n_accepted": 0,
+      "n_attempted": 0,
+      "time": 44.83313549996819,
+      "text_sample": "\n1.  **Identify the objects and their states:** The tea is hot (thermal energy is high) and the ice is cold (thermal energy is low).\n2.  **Analyze the goal:** The goal is to cool the tea quickly.\n3.  "
+    },
+    "entropy_ph_gate": {
+      "correct": false,
+      "majority_correct": false,
+      "extracted_answer": "A",
+      "all_answers": [
+        "A",
+        "A",
+        "A"
+      ],
+      "agreement": 1.0,
+      "consistency": 1.0,
+      "n_accepted": 0,
+      "n_attempted": 0,
+      "time": 62.70327779999934,
+      "text_sample": "\n1.  **Identify the objects and their states:** The tea is hot (thermal energy is high) and the ice is cold (thermal energy is low).\n2.  **Analyze the goal:** The goal is to cool the tea quickly.\n3.  "
+    },
+    "entropy": {
+      "correct": false,
+      "majority_correct": false,
+      "extracted_answer": "A",
+      "all_answers": [
+        "A",
+        "A",
+        "A"
+      ],
+      "agreement": 1.0,
+      "consistency": 1.0,
+      "n_accepted": 0,
+      "n_attempted": 0,
+      "time": 62.123293600045145,
+      "text_sample": "\n1.  **Identify the objects and their states:** The tea is hot (thermal energy is high) and the ice is cold (thermal energy is low).\n2.  **Analyze the goal:** The goal is to cool the tea quickly.\n3.  "
+    }
+  },
+  {
+    "id": "MDSA_2007_8_3",
+    "question": "Logging companies cut trees in a forest and send the trees to lumber mills far from the forest. The mills make boards that are used for construction. Some logging companies do not plant tree seedlings after cutting trees. Not planting tree seedlings might affect people who need boards in the future because",
+    "gold_answer": "A",
+    "baseline": {
+      "correct": false,
+      "majority_correct": true,
+      "extracted_answer": "B",
+      "all_answers": [
+        "B",
+        "A",
+        "A"
+      ],
+      "agreement": 0.3333333333333333,
+      "consistency": 0.3734590365282264,
+      "n_accepted": 0,
+      "n_attempted": 0,
+      "time": 47.76418970001396,
+      "text_sample": "\n1. The problem states that logging companies cut trees and send them to mills.\n2. Some logging companies do not plant tree seedlings after cutting trees.\n3. Not planting tree seedlings means the tree"
+    },
+    "entropy_ph_gate": {
+      "correct": false,
+      "majority_correct": false,
+      "extracted_answer": "B",
+      "all_answers": [
+        "B",
+        "B",
+        "B"
+      ],
+      "agreement": 1.0,
+      "consistency": 1.0,
+      "n_accepted": 0,
+      "n_attempted": 0,
+      "time": 60.38255510001909,
+      "text_sample": "\n1. The problem states that logging companies cut trees and send them to mills.\n2. Some logging companies do not plant tree seedlings after cutting trees.\n3. Not planting tree seedlings means the tree"
+    },
+    "entropy": {
+      "correct": false,
+      "majority_correct": false,
+      "extracted_answer": "B",
+      "all_answers": [
+        "B",
+        "B",
+        "B"
+      ],
+      "agreement": 1.0,
+      "consistency": 1.0,
+      "n_accepted": 0,
+      "n_attempted": 0,
+      "time": 62.309545399970375,
+      "text_sample": "\n1. The problem states that logging companies cut trees and send them to mills.\n2. Some logging companies do not plant tree seedlings after cutting trees.\n3. Not planting tree seedlings means the tree"
+    }
+  },
+  {
+    "id": "Mercury_7094290",
+    "question": "It was once thought that living organisms could come from non-living matter. For example, people believed that flies would develop from rotting meat. This idea was later disproved primarily because of",
+    "gold_answer": "C",
+    "baseline": {
+      "correct": false,
+      "majority_correct": false,
+      "extracted_answer": "A",
+      "all_answers": [
+        "A",
+        "A",
+        null
+      ],
+      "agreement": 0.3333333333333333,
+      "consistency": 0.23476347634763473,
+      "n_accepted": 0,
+      "n_attempted": 0,
+      "time": 47.80977759999223,
+      "text_sample": "\n1. The question asks about the primary reason for disproving the idea that living organisms could come from non-living matter (biogenesis).\n2. The historical context involves the 19th-century debate "
+    },
+    "entropy_ph_gate": {
+      "correct": false,
+      "majority_correct": false,
+      "extracted_answer": "A",
+      "all_answers": [
+        "A",
+        "A",
+        "A"
+      ],
+      "agreement": 1.0,
+      "consistency": 1.0,
+      "n_accepted": 0,
+      "n_attempted": 0,
+      "time": 63.24762220005505,
+      "text_sample": "\n1. The question asks about the primary reason for disproving the idea that living organisms could come from non-living matter (biogenesis).\n2. The historical context involves the 19th-century debate "
+    },
+    "entropy": {
+      "correct": false,
+      "majority_correct": false,
+      "extracted_answer": "A",
+      "all_answers": [
+        "A",
+        "A",
+        "A"
+      ],
+      "agreement": 1.0,
+      "consistency": 1.0,
+      "n_accepted": 0,
+      "n_attempted": 0,
+      "time": 60.23711399990134,
+      "text_sample": "\n1. The question asks about the primary reason for disproving the idea that living organisms could come from non-living matter (biogenesis).\n2. The historical context involves the 19th-century debate "
+    }
+  }
+]

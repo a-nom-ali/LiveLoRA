@@ -22,8 +22,10 @@ env/
 # Jupyter
 .ipynb_checkpoints/
 
-# Experiment outputs
-outputs/
+# Experiment outputs (large/intermediate)
+outputs/*
+# But keep benchmark results for sharing across machines
+!outputs/results/
 wandb/
 logs/
 checkpoints/

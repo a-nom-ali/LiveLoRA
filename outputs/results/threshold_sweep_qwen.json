@@ -1,0 +1,492 @@
+{
+  "0.0": {
+    "tau_rho": 0.0,
+    "mean_consistency": 0.8462335622587565,
+    "acceptance_rate": 54.54545454545454,
+    "total_accepted": 12,
+    "total_attempted": 22,
+    "per_prompt": [
+      {
+        "n_accepted": 2,
+        "n_attempted": 2,
+        "n_chunks": 4,
+        "consistency": 0.956989247311828
+      },
+      {
+        "n_accepted": 2,
+        "n_attempted": 2,
+        "n_chunks": 4,
+        "consistency": 0.4629655461012694
+      },
+      {
+        "n_accepted": 0,
+        "n_attempted": 0,
+        "n_chunks": 4,
+        "consistency": 1.0
+      },
+      {
+        "n_accepted": 2,
+        "n_attempted": 3,
+        "n_chunks": 4,
+        "consistency": 1.0
+      },
+      {
+        "n_accepted": 1,
+        "n_attempted": 4,
+        "n_chunks": 4,
+        "consistency": 1.0
+      },
+      {
+        "n_accepted": 2,
+        "n_attempted": 3,
+        "n_chunks": 4,
+        "consistency": 0.8627450980392156
+      },
+      {
+        "n_accepted": 0,
+        "n_attempted": 0,
+        "n_chunks": 4,
+        "consistency": 1.0
+      },
+      {
+        "n_accepted": 0,
+        "n_attempted": 4,
+        "n_chunks": 4,
+        "consistency": 1.0
+      },
+      {
+        "n_accepted": 1,
+        "n_attempted": 1,
+        "n_chunks": 4,
+        "consistency": 0.7588652482269503
+      },
+      {
+        "n_accepted": 2,
+        "n_attempted": 3,
+        "n_chunks": 4,
+        "consistency": 0.4207704829083017
+      }
+    ],
+    "elapsed": 302.1631697000703
+  },
+  "1.0": {
+    "tau_rho": 1.0,
+    "mean_consistency": 0.8033811373798218,
+    "acceptance_rate": 45.45454545454545,
+    "total_accepted": 10,
+    "total_attempted": 22,
+    "per_prompt": [
+      {
+        "n_accepted": 2,
+        "n_attempted": 2,
+        "n_chunks": 4,
+        "consistency": 0.915994623655914
+      },
+      {
+        "n_accepted": 1,
+        "n_attempted": 3,
+        "n_chunks": 4,
+        "consistency": 0.32166495187230254
+      },
+      {
+        "n_accepted": 0,
+        "n_attempted": 0,
+        "n_chunks": 4,
+        "consistency": 1.0
+      },
+      {
+        "n_accepted": 2,
+        "n_attempted": 2,
+        "n_chunks": 4,
+        "consistency": 0.8867924528301887
+      },
+      {
+        "n_accepted": 0,
+        "n_attempted": 4,
+        "n_chunks": 4,
+        "consistency": 1.0
+      },
+      {
+        "n_accepted": 1,
+        "n_attempted": 3,
+        "n_chunks": 4,
+        "consistency": 1.0
+      },
+      {
+        "n_accepted": 0,
+        "n_attempted": 0,
+        "n_chunks": 4,
+        "consistency": 1.0
+      },
+      {
+        "n_accepted": 2,
+        "n_attempted": 3,
+        "n_chunks": 4,
+        "consistency": 0.4444444444444445
+      },
+      {
+        "n_accepted": 1,
+        "n_attempted": 1,
+        "n_chunks": 4,
+        "consistency": 0.8115942028985508
+      },
+      {
+        "n_accepted": 1,
+        "n_attempted": 4,
+        "n_chunks": 4,
+        "consistency": 0.6533206980968176
+      }
+    ],
+    "elapsed": 343.5526638000738
+  },
+  "5.0": {
+    "tau_rho": 5.0,
+    "mean_consistency": 0.9102630342908121,
+    "acceptance_rate": 30.434782608695656,
+    "total_accepted": 7,
+    "total_attempted": 23,
+    "per_prompt": [
+      {
+        "n_accepted": 0,
+        "n_attempted": 4,
+        "n_chunks": 4,
+        "consistency": 1.0
+      },
+      {
+        "n_accepted": 0,
+        "n_attempted": 4,
+        "n_chunks": 4,
+        "consistency": 1.0
+      },
+      {
+        "n_accepted": 0,
+        "n_attempted": 0,
+        "n_chunks": 4,
+        "consistency": 1.0
+      },
+      {
+        "n_accepted": 2,
+        "n_attempted": 2,
+        "n_chunks": 4,
+        "consistency": 1.0
+      },
+      {
+        "n_accepted": 0,
+        "n_attempted": 4,
+        "n_chunks": 4,
+        "consistency": 1.0
+      },
+      {
+        "n_accepted": 1,
+        "n_attempted": 3,
+        "n_chunks": 4,
+        "consistency": 1.0
+      },
+      {
+        "n_accepted": 0,
+        "n_attempted": 0,
+        "n_chunks": 4,
+        "consistency": 1.0
+      },
+      {
+        "n_accepted": 2,
+        "n_attempted": 3,
+        "n_chunks": 4,
+        "consistency": 0.6074588477366255
+      },
+      {
+        "n_accepted": 0,
+        "n_attempted": 1,
+        "n_chunks": 4,
+        "consistency": 1.0
+      },
+      {
+        "n_accepted": 2,
+        "n_attempted": 2,
+        "n_chunks": 4,
+        "consistency": 0.49517149517149517
+      }
+    ],
+    "elapsed": 740.1747393000405
+  },
+  "10.0": {
+    "tau_rho": 10.0,
+    "mean_consistency": 0.88687954914847,
+    "acceptance_rate": 42.857142857142854,
+    "total_accepted": 9,
+    "total_attempted": 21,
+    "per_prompt": [
+      {
+        "n_accepted": 1,
+        "n_attempted": 3,
+        "n_chunks": 4,
+        "consistency": 1.0
+      },
+      {
+        "n_accepted": 2,
+        "n_attempted": 2,
+        "n_chunks": 4,
+        "consistency": 0.4716981132075471
+      },
+      {
+        "n_accepted": 0,
+        "n_attempted": 0,
+        "n_chunks": 4,
+        "consistency": 1.0
+      },
+      {
+        "n_accepted": 2,
+        "n_attempted": 2,
+        "n_chunks": 4,
+        "consistency": 1.0
+      },
+      {
+        "n_accepted": 0,
+        "n_attempted": 4,
+        "n_chunks": 4,
+        "consistency": 1.0
+      },
+      {
+        "n_accepted": 1,
+        "n_attempted": 3,
+        "n_chunks": 4,
+        "consistency": 1.0
+      },
+      {
+        "n_accepted": 0,
+        "n_attempted": 0,
+        "n_chunks": 4,
+        "consistency": 1.0
+      },
+      {
+        "n_accepted": 1,
+        "n_attempted": 4,
+        "n_chunks": 4,
+        "consistency": 0.7416666666666667
+      },
+      {
+        "n_accepted": 0,
+        "n_attempted": 0,
+        "n_chunks": 4,
+        "consistency": 1.0
+      },
+      {
+        "n_accepted": 2,
+        "n_attempted": 3,
+        "n_chunks": 4,
+        "consistency": 0.6554307116104869
+      }
+    ],
+    "elapsed": 622.919931899989
+  },
+  "25.0": {
+    "tau_rho": 25.0,
+    "mean_consistency": 0.9134248697990308,
+    "acceptance_rate": 42.857142857142854,
+    "total_accepted": 9,
+    "total_attempted": 21,
+    "per_prompt": [
+      {
+        "n_accepted": 1,
+        "n_attempted": 3,
+        "n_chunks": 4,
+        "consistency": 0.956989247311828
+      },
+      {
+        "n_accepted": 1,
+        "n_attempted": 3,
+        "n_chunks": 4,
+        "consistency": 1.0
+      },
+      {
+        "n_accepted": 0,
+        "n_attempted": 0,
+        "n_chunks": 4,
+        "consistency": 1.0
+      },
+      {
+        "n_accepted": 2,
+        "n_attempted": 2,
+        "n_chunks": 4,
+        "consistency": 1.0
+      },
+      {
+        "n_accepted": 1,
+        "n_attempted": 3,
+        "n_chunks": 4,
+        "consistency": 1.0
+      },
+      {
+        "n_accepted": 1,
+        "n_attempted": 3,
+        "n_chunks": 4,
+        "consistency": 1.0
+      },
+      {
+        "n_accepted": 0,
+        "n_attempted": 0,
+        "n_chunks": 4,
+        "consistency": 1.0
+      },
+      {
+        "n_accepted": 2,
+        "n_attempted": 3,
+        "n_chunks": 4,
+        "consistency": 0.6206284322226351
+      },
+      {
+        "n_accepted": 0,
+        "n_attempted": 1,
+        "n_chunks": 4,
+        "consistency": 1.0
+      },
+      {
+        "n_accepted": 1,
+        "n_attempted": 3,
+        "n_chunks": 4,
+        "consistency": 0.556631018455846
+      }
+    ],
+    "elapsed": 512.7495492000598
+  },
+  "50.0": {
+    "tau_rho": 50.0,
+    "mean_consistency": 0.9412548359207842,
+    "acceptance_rate": 20.833333333333336,
+    "total_accepted": 5,
+    "total_attempted": 24,
+    "per_prompt": [
+      {
+        "n_accepted": 1,
+        "n_attempted": 3,
+        "n_chunks": 4,
+        "consistency": 1.0
+      },
+      {
+        "n_accepted": 0,
+        "n_attempted": 4,
+        "n_chunks": 4,
+        "consistency": 1.0
+      },
+      {
+        "n_accepted": 0,
+        "n_attempted": 0,
+        "n_chunks": 4,
+        "consistency": 1.0
+      },
+      {
+        "n_accepted": 1,
+        "n_attempted": 4,
+        "n_chunks": 4,
+        "consistency": 1.0
+      },
+      {
+        "n_accepted": 1,
+        "n_attempted": 3,
+        "n_chunks": 4,
+        "consistency": 1.0
+      },
+      {
+        "n_accepted": 0,
+        "n_attempted": 4,
+        "n_chunks": 4,
+        "consistency": 1.0
+      },
+      {
+        "n_accepted": 0,
+        "n_attempted": 0,
+        "n_chunks": 4,
+        "consistency": 1.0
+      },
+      {
+        "n_accepted": 1,
+        "n_attempted": 3,
+        "n_chunks": 4,
+        "consistency": 0.7650387806637807
+      },
+      {
+        "n_accepted": 0,
+        "n_attempted": 0,
+        "n_chunks": 4,
+        "consistency": 1.0
+      },
+      {
+        "n_accepted": 1,
+        "n_attempted": 3,
+        "n_chunks": 4,
+        "consistency": 0.6475095785440613
+      }
+    ],
+    "elapsed": 603.7848179999273
+  },
+  "100.0": {
+    "tau_rho": 100.0,
+    "mean_consistency": 0.872127485225797,
+    "acceptance_rate": 45.0,
+    "total_accepted": 9,
+    "total_attempted": 20,
+    "per_prompt": [
+      {
+        "n_accepted": 2,
+        "n_attempted": 2,
+        "n_chunks": 4,
+        "consistency": 1.0
+      },
+      {
+        "n_accepted": 1,
+        "n_attempted": 3,
+        "n_chunks": 4,
+        "consistency": 0.4716981132075471
+      },
+      {
+        "n_accepted": 0,
+        "n_attempted": 0,
+        "n_chunks": 4,
+        "consistency": 1.0
+      },
+      {
+        "n_accepted": 2,
+        "n_attempted": 2,
+        "n_chunks": 4,
+        "consistency": 0.5757575757575758
+      },
+      {
+        "n_accepted": 1,
+        "n_attempted": 3,
+        "n_chunks": 4,
+        "consistency": 1.0
+      },
+      {
+        "n_accepted": 1,
+        "n_attempted": 4,
+        "n_chunks": 4,
+        "consistency": 0.9282051282051281
+      },
+      {
+        "n_accepted": 0,
+        "n_attempted": 0,
+        "n_chunks": 4,
+        "consistency": 1.0
+      },
+      {
+        "n_accepted": 2,
+        "n_attempted": 2,
+        "n_chunks": 4,
+        "consistency": 0.7456140350877193
+      },
+      {
+        "n_accepted": 0,
+        "n_attempted": 0,
+        "n_chunks": 4,
+        "consistency": 1.0
+      },
+      {
+        "n_accepted": 0,
+        "n_attempted": 4,
+        "n_chunks": 4,
+        "consistency": 1.0
+      }
+    ],
+    "elapsed": 644.4208207000047
+  }
+}
